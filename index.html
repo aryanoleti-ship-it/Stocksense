@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -1324,7 +1324,7 @@ async function sc(preset){
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ},
       body:JSON.stringify({
-        model:'llama3-8b-8192',
+        model:'llama-3.1-8b-instant',
         messages:[
           {role:'system',content:'You are StockSense AI, a friendly investing assistant for Indian retail investors. Keep answers concise (2-4 sentences), use simple language, and focus on Indian markets (NSE, BSE, Nifty, Sensex). Always add a disclaimer that you are not a financial advisor.'},
           ...chatHist.slice(-8)
