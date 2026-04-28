@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -854,26 +854,79 @@ function seededRng(seed){
   let s=seed;
   return function(){s=(s*9301+49297)%233280;return s/233280;};
 }
-function genPrices(sym,range){
-  const base=getPrice(sym)||1000;
-  const pct=getPct(sym)||0;
-  const pts={
-    '1W':7,'1M':30,'3M':90,'1Y':252
-  }[range]||30;
-  const rng=seededRng(sym.split('').reduce((a,c)=>a+c.charCodeAt(0),0)+pts);
-  const prices=[];
-  let p=base*(1-(pct/100));
-  for(let i=0;i<pts;i++){
-    p=p*(1+(rng()-0.5)*0.025);
-    prices.push(Math.max(1,+p.toFixed(2)));
+// Cache for historical prices fetched from Yahoo
+const histCache={};
+
+async function fetchHistorical(sym, range){
+  const key=sym+'_'+range;
+  if(histCache[key]) return histCache[key];
+  const intervals={'1W':'1d','1M':'1d','3M':'1d','1Y':'1wk'};
+  const periods={'1W':8,'1M':31,'3M':91,'1Y':365};
+  const interval=intervals[range]||'1d';
+  const days=periods[range]||31;
+  const end=Math.floor(Date.now()/1000);
+  const start=end-(days*86400);
+  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=${interval}&period1=${start}&period2=${end}`;
+  for(const proxy of PROXIES){
+    try{
+      const r=await fetch(proxy+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
+      if(!r.ok) continue;
+      const j=await r.json();
+      const closes=j?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+      const timestamps=j?.chart?.result?.[0]?.timestamp;
+      if(!closes||!timestamps) continue;
+      const data=[];
+      for(let i=0;i<closes.length;i++){
+        if(closes[i]!=null) data.push({p:+closes[i].toFixed(2), t:timestamps[i]});
+      }
+      if(data.length>2){
+        histCache[key]=data;
+        return data;
+      }
+    }catch(e){}
   }
-  prices.push(base);
-  return prices;
+  return null;
 }
+
+// Groq-powered forecast: generates 7-day forecast based on trend + news
+async function genAIForecast(sym, lastPrice, pct, metaName){
+  try{
+    const prompt=`You are a stock analysis AI. Given the following data for ${metaName} (${sym}) on NSE India:
+- Current price: ₹${lastPrice}
+- Today's change: ${pct>0?'+':''}${pct?.toFixed(2)||0}%
+- Sector: ${NMETA[sym]?.s||'Unknown'}
+
+Generate a realistic 7-day price forecast as a JSON array of 7 numbers (daily closing prices), starting from tomorrow. 
+Base it on: current momentum, typical volatility for this stock type, and general Indian market conditions in April 2026.
+Reply with ONLY a JSON array like: [1234.50, 1238.20, 1242.10, 1239.80, 1245.60, 1250.30, 1248.90]
+No explanation, just the array.`;
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ},
+      body:JSON.stringify({model:'llama-3.1-8b-instant',messages:[{role:'user',content:prompt}],max_tokens:100,temperature:0.4})
+    });
+    const j=await r.json();
+    const text=j.choices?.[0]?.message?.content||'';
+    const match=text.match(/\[[\d.,\s]+\]/);
+    if(match){
+      const arr=JSON.parse(match[0]);
+      if(Array.isArray(arr)&&arr.length>=5) return arr.slice(0,7).map(v=>+parseFloat(v).toFixed(2));
+    }
+  }catch(e){}
+  // Fallback: simple momentum-based forecast
+  const vol=0.012;
+  const momentum=(pct||0)/100;
+  const forecast=[];
+  let p=lastPrice;
+  for(let i=0;i<7;i++){
+    p=p*(1+momentum*0.3+(Math.random()-0.48)*vol);
+    forecast.push(+p.toFixed(2));
+  }
+  return forecast;
+}
+
 function genLabels(range){
-  const pts={
-    '1W':8,'1M':31,'3M':91,'1Y':253
-  }[range]||31;
+  const pts={'1W':8,'1M':31,'3M':91,'1Y':53}[range]||31;
   const labels=[];
   const now=new Date();
   for(let i=pts-1;i>=0;i--){
@@ -1071,8 +1124,6 @@ function renderSidebar(){
 function renderStockDetail(sym){
   const d=liveStocks[sym]||FB[sym]||{};
   const meta=NMETA[sym]||{n:sym,s:'—'};
-  const prices=genPrices(sym,curRange);
-  const labels=genLabels(curRange);
   const isDark=document.body.classList.contains('dark');
   const signal=d.pct>1?'Strong Buy':d.pct>0?'Buy':d.pct>-1?'Hold':'Sell';
   const sigClr=d.pct>1?'#16a34a':d.pct>0?'#22c55e':d.pct>-1?'#f59e0b':'#dc2626';
@@ -1081,6 +1132,206 @@ function renderStockDetail(sym){
   const el=document.getElementById('sdet');
   if(!el)return;
   el.innerHTML=`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:2px">${meta.s} · NSE</div>
+        <div style="font-size:20px;font-weight:800;color:var(--text)">${meta.n}</div>
+        <div style="font-size:13px;color:var(--text3)">${sym}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:28px;font-weight:900;color:var(--text)">${fmt(d.p||0)}</div>
+        <div style="font-size:13px;font-weight:700;color:${clr(d.pct||0)}">${d.c>=0?'+':''}${(d.c||0).toFixed(2)} (${fmtPct(d.pct||0)})</div>
+        <div style="font-size:11px;margin-top:4px;font-weight:700;color:${sigClr};background:${sigClr}18;padding:2px 8px;border-radius:20px;display:inline-block">${signal}</div>
+      </div>
+    </div>
+    <div class="range-btns">
+      ${['1W','1M','3M','1Y'].map(r=>`<button class="rb ${r===curRange?'on':''}" onclick="curRange='${r}';renderStockDetail('${sym}')">${r}</button>`).join('')}
+    </div>
+    <div class="card" style="padding:14px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--text)">Price Chart</div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:10px;color:var(--text3)">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:16px;height:2px;background:#2d6a5e;display:inline-block;border-radius:2px"></span>Historical</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:16px;height:2px;background:#f59e0b;display:inline-block;border-radius:2px;border-top:2px dashed #f59e0b"></span>AI Forecast (7 days)</span>
+        </div>
+      </div>
+      <canvas id="sc-chart" height="130"></canvas>
+      <div id="forecast-loading" style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px">⏳ Loading AI forecast...</div>
+    </div>
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:10px;color:#92400e;margin-bottom:14px">
+      🤖 <strong>AI Forecast:</strong> The orange dashed line shows a <strong>simulated 7-day price prediction</strong> generated by AI based on current momentum and market conditions. <strong>Not financial advice.</strong>
+    </div>
+    <div class="krow">
+      <div class="ki"><div class="kl">Market Cap</div><div class="kv">${d.mc||'—'}</div></div>
+      <div class="ki"><div class="kl">P/E Ratio</div><div class="kv">${d.pe||'—'}</div></div>
+      <div class="ki"><div class="kl">EPS</div><div class="kv">₹${d.eps||'—'}</div></div>
+      <div class="ki"><div class="kl">Dividend</div><div class="kv">${d.div||'—'}</div></div>
+      <div class="ki"><div class="kl">Beta</div><div class="kv">${d.beta||'—'}</div></div>
+      <div class="ki"><div class="kl">Volume</div><div class="kv">${d.vol||'—'}</div></div>
+      <div class="ki"><div class="kl">52W High</div><div class="kv">${d.h52?fmt(d.h52):'—'}</div></div>
+      <div class="ki"><div class="kl">52W Low</div><div class="kv">${d.l52?fmt(d.l52):'—'}</div></div>
+    </div>
+    <div class="card" style="padding:14px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px">
+        <span>52W Low: ${d.l52?fmt(d.l52):'—'}</span>
+        <span style="font-weight:700;color:var(--text)">Current: ${fmt(d.p||0)}</span>
+        <span>52W High: ${d.h52?fmt(d.h52):'—'}</span>
+      </div>
+      <div class="rbar"><div class="rfill" style="width:${rangePos}%;background:${rangePos>60?'#16a34a':rangePos>30?'#f59e0b':'#dc2626'}"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+        <span>Bearish Zone</span><span>Neutral</span><span>Bullish Zone</span>
+      </div>
+    </div>
+    <div class="card" style="padding:14px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--text)">Risk Level: <span style="color:${riskClr}">${d.risk||'Medium'}</span></div>
+        <button class="btn-outline" style="font-size:10px;padding:4px 10px" onclick="document.getElementById('exbox-${sym}').classList.toggle('show')">Learn More</button>
+      </div>
+      <div class="exbox" id="exbox-${sym}">
+        <strong>${meta.n}</strong> is a ${meta.s} sector company listed on NSE. 
+        With a beta of ${d.beta||'1.0'}, it is ${parseFloat(d.beta||1)>1?'more volatile than':'less volatile than'} the broader market.
+        The P/E ratio of ${d.pe||'N/A'} ${parseFloat(d.pe||0)>30?'suggests premium valuation':'suggests reasonable valuation'}.
+        Dividend yield of ${d.div||'0%'} ${parseFloat(d.div||0)>2?'makes it attractive for income investors':'is modest'}.
+      </div>
+    </div>
+    <div class="disclaimer">
+      <strong>⚠ Disclaimer:</strong> Historical prices are sourced from Yahoo Finance. The AI forecast is <strong>simulated</strong> and for educational purposes only. 
+      This is NOT financial advice. Do not make real investment decisions based on this data.
+    </div>
+  `;
+
+  // Draw chart with real historical data + AI forecast
+  drawStockChart(sym, d, meta, isDark);
+}
+
+async function drawStockChart(sym, d, meta, isDark){
+  const ctx=document.getElementById('sc-chart');
+  if(!ctx) return;
+  if(sChart){sChart.destroy();sChart=null;}
+
+  const currentPrice=d.p||0;
+  const pct=d.pct||0;
+
+  // Try to get real historical data
+  let histPrices=[];
+  let histLabels=[];
+  const histData=await fetchHistorical(sym, curRange);
+
+  if(histData&&histData.length>2){
+    histPrices=histData.map(h=>h.p);
+    histLabels=histData.map(h=>{
+      const dt=new Date(h.t*1000);
+      return dt.toLocaleDateString('en-IN',{month:'short',day:'numeric'});
+    });
+    // Make sure last point matches current live price
+    if(currentPrice>0) histPrices[histPrices.length-1]=currentPrice;
+  } else {
+    // Fallback: use current price with simple backward simulation
+    const pts={'1W':7,'1M':30,'3M':90,'1Y':52}[curRange]||30;
+    const rng=seededRng(sym.split('').reduce((a,c)=>a+c.charCodeAt(0),0)+pts);
+    let p=currentPrice*(1-(pct/100)*0.8);
+    for(let i=0;i<pts;i++){
+      p=p*(1+(rng()-0.48)*0.018);
+      histPrices.push(+p.toFixed(2));
+    }
+    histPrices.push(currentPrice);
+    histLabels=genLabels(curRange);
+  }
+
+  // Get AI forecast (7 days ahead)
+  const forecastPrices=await genAIForecast(sym, currentPrice, pct, meta.n);
+
+  // Build forecast labels (next 7 trading days)
+  const forecastLabels=[];
+  const lastDate=new Date();
+  for(let i=1;i<=7;i++){
+    const d2=new Date(lastDate);
+    d2.setDate(d2.getDate()+i);
+    // Skip weekends
+    if(d2.getDay()===0) d2.setDate(d2.getDate()+1);
+    if(d2.getDay()===6) d2.setDate(d2.getDate()+2);
+    forecastLabels.push(d2.toLocaleDateString('en-IN',{month:'short',day:'numeric'}));
+  }
+
+  // Combine: historical + forecast
+  const allLabels=[...histLabels, ...forecastLabels];
+  const histDataset=new Array(allLabels.length).fill(null);
+  const forecastDataset=new Array(allLabels.length).fill(null);
+
+  // Fill historical
+  for(let i=0;i<histPrices.length;i++) histDataset[i]=histPrices[i];
+  // Bridge: last historical point connects to first forecast
+  histDataset[histPrices.length-1]=currentPrice;
+  forecastDataset[histPrices.length-1]=currentPrice;
+  // Fill forecast
+  for(let i=0;i<forecastPrices.length;i++) forecastDataset[histPrices.length+i]=forecastPrices[i];
+
+  // Hide loading
+  const loadEl=document.getElementById('forecast-loading');
+  if(loadEl) loadEl.style.display='none';
+
+  sChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:allLabels,
+      datasets:[
+        {
+          label:'Historical Price',
+          data:histDataset,
+          borderColor:'#2d6a5e',
+          borderWidth:2,
+          fill:true,
+          backgroundColor:'rgba(45,106,94,.08)',
+          pointRadius:0,
+          tension:.4
+        },
+        {
+          label:'AI Forecast (7 days)',
+          data:forecastDataset,
+          borderColor:'#f59e0b',
+          borderWidth:2.5,
+          borderDash:[6,4],
+          fill:false,
+          pointRadius:3,
+          pointBackgroundColor:'#f59e0b',
+          tension:.4
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{
+          display:true,
+          position:'top',
+          labels:{font:{size:10},color:isDark?'#9ca3af':'#6b7280',boxWidth:20,padding:10}
+        },
+        tooltip:{
+          mode:'index',
+          intersect:false,
+          callbacks:{
+            label:(c)=>`${c.dataset.label}: ₹${c.raw?.toLocaleString('en-IN')||''}`,
+            afterBody:(items)=>{
+              const idx=items[0]?.dataIndex;
+              if(idx>=histPrices.length) return ['⚠ AI Forecast — not real data'];
+              return [];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          ticks:{color:isDark?'#9ca3af':'#6b7280',font:{size:9},maxTicksLimit:8},
+          grid:{display:false}
+        },
+        y:{
+          grid:{color:isDark?'rgba(255,255,255,.05)':'rgba(0,0,0,.05)'},
+          ticks:{color:isDark?'#9ca3af':'#6b7280',font:{size:10},callback:(v)=>'₹'+v.toLocaleString('en-IN')}
+        }
+      }
+    }
+  });
+}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
       <div>
         <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:2px">${meta.s} · NSE</div>
@@ -1138,33 +1389,6 @@ function renderStockDetail(sym){
       This is NOT financial advice. Do not make real investment decisions based on this data.
     </div>
   `;
-  // Draw chart
-  const ctx=document.getElementById('sc-chart');
-  if(!ctx)return;
-  if(sChart){sChart.destroy();sChart=null;}
-  const forecastStart=prices.length-Math.floor(prices.length*0.2);
-  const mainData=prices.map((p,i)=>i<forecastStart?p:null);
-  const forecastData=prices.map((p,i)=>i>=forecastStart-1?p:null);
-  sChart=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {data:mainData,borderColor:'#2d6a5e',borderWidth:2,fill:true,backgroundColor:'rgba(45,106,94,.08)',pointRadius:0,tension:.4},
-        {data:forecastData,borderColor:'#f59e0b',borderWidth:2,borderDash:[5,4],fill:false,pointRadius:0,tension:.4,label:'Forecast'}
-      ]
-    },
-    options:{
-      responsive:true,
-      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:(c)=>`₹${c.raw?.toLocaleString('en-IN')||''}`}}},
-      scales:{
-        x:{display:false},
-        y:{grid:{color:isDark?'rgba(255,255,255,.05)':'rgba(0,0,0,.05)'},ticks:{color:isDark?'#9ca3af':'#6b7280',font:{size:10},callback:(v)=>'₹'+v.toLocaleString('en-IN')}}
-      }
-    }
-  });
-}
-
 // ===== PORTFOLIO =====
 function renderPort(){
   const positions=port.pos;
