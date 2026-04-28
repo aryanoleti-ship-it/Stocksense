@@ -6,7 +6,6 @@
 <title>StockSense — Live Indian Stocks</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --bg:#f4f4ef;--bg2:#fff;--border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af;
@@ -755,35 +754,18 @@ function doSignUp(){
   setTimeout(()=>{closeAuth();loadApp();},800);
 }
 function doGoogleAuth(){
-  if(typeof google!=='undefined'&&google.accounts){
-    const client=google.accounts.oauth2.initTokenClient({
-      client_id:'607955839600-4q2skq3q3q3q3q3q3q3q3q3q3q3q3q3.apps.googleusercontent.com',
-      scope:'email profile',
-      callback:(resp)=>{
-        if(resp.access_token){
-          fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}})
-          .then(r=>r.json()).then(info=>{
-            const u={name:info.name||'Google User',email:info.email,pass:'',avatar:(info.name||'G')[0].toUpperCase(),picture:info.picture||''};
-            const users=getUsers();
-            const ex=users.find(x=>x.email===u.email);
-            if(!ex){users.push(u);saveUsers(users);}else{Object.assign(ex,u);saveUsers(users);}
-            setCurrentUser(u);closeAuth();loadApp();
-          });
-        }
-      }
-    });
-    client.requestAccessToken();
-  } else {
-    // Fallback: prompt for Google email
-    const email=prompt('Enter your Google email address:');
-    if(!email||!email.includes('@'))return;
-    const name=email.split('@')[0];
-    const u={name:name,email:email,pass:'',avatar:name[0].toUpperCase(),isGoogle:true};
-    const users=getUsers();
-    const ex=users.find(x=>x.email===u.email);
-    if(!ex){users.push(u);saveUsers(users);}else{Object.assign(ex,u);saveUsers(users);}
-    setCurrentUser(u);closeAuth();loadApp();
-  }
+  // Simple mock Google auth - just uses your Google email
+  const email=prompt('Enter your Google email:');
+  if(!email||!email.includes('@'))return;
+  const name=email.split('@')[0];
+  const u={name:name,email:email,pass:'',avatar:name[0].toUpperCase(),isGoogle:true};
+  const users=getUsers();
+  const ex=users.find(x=>x.email===u.email);
+  if(!ex){users.push(u);saveUsers(users);}
+  else{Object.assign(ex,u);saveUsers(users);}
+  setCurrentUser(u);
+  closeAuth();
+  loadApp();
 }
 function doLogout(){
   clearCurrentUser();
