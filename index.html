@@ -349,11 +349,23 @@ h1{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px}
 <!-- HOME -->
 <div id="p-home" class="page">
   <div class="hero">
+    <div style="position:relative;z-index:1;padding:40px 48px 36px">
+      <div id="hero-greeting" style="color:rgba(255,255,255,.9);font-size:clamp(1.6rem,3.5vw,2.6rem);font-weight:900;line-height:1.2;margin-bottom:8px"></div>
+      <div style="color:rgba(255,255,255,.6);font-size:15px;margin-bottom:24px">Here's what the market looks like today.</div>
+      <div class="search-box" style="max-width:420px">
+        <div class="search-box-inner">
+          <div class="search-label">Stock Symbol or Company</div>
+          <input id="hs" placeholder="INFY" onkeydown="if(event.key==='Enter')doSearch()" onclick="heroInputClick()"/>
+        </div>
+        <button class="search-btn" onclick="doSearch()">→</button>
+      </div>
+      <div class="hero-chips" id="hchips"></div>
     </div>
   </div>
   <div class="idx-grid" id="hidx"></div>
   <div id="auth-banner-wrap"></div>
   <div class="wrap">
+    <div id="recently-viewed-wrap"></div>
     <div class="g2" style="margin-top:18px">
       <div class="card" style="padding:0;overflow:hidden">
         <div style="padding:14px 16px 8px" class="card-title">Top Gainers Today</div>
@@ -982,10 +994,57 @@ async function fetchLive(){
 }
 
 // ===== HOME =====
+function getGreeting(){
+  const h=new Date().getHours();
+  if(h<12) return 'Good morning';
+  if(h<17) return 'Good afternoon';
+  return 'Good evening';
+}
+function getRecentlyViewed(){
+  return JSON.parse(localStorage.getItem('ss-recent')||'[]');
+}
+function addRecentlyViewed(sym){
+  let recent=getRecentlyViewed();
+  recent=recent.filter(s=>s!==sym);
+  recent.unshift(sym);
+  recent=recent.slice(0,6);
+  localStorage.setItem('ss-recent',JSON.stringify(recent));
+}
+function renderRecentlyViewed(){
+  const wrap=document.getElementById('recently-viewed-wrap');
+  if(!wrap)return;
+  const recent=getRecentlyViewed();
+  if(!recent.length){wrap.innerHTML='';return;}
+  wrap.innerHTML=`
+    <div style="margin-bottom:18px">
+      <div class="card-title" style="margin-bottom:12px">Recently Viewed</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+        ${recent.map(sym=>{
+          const pct=getPct(sym);
+          const pr=getPrice(sym);
+          return `<button class="stock-card" onclick="openDetail('${sym}')" style="flex-direction:column;align-items:flex-start;${pct<0?'background:rgba(220,38,38,0.07);border-color:rgba(220,38,38,0.25);':''}">
+            <div style="font-weight:700;font-size:13px;color:var(--text)">${sym.replace('.NS','')}</div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:6px">${NMETA[sym]?.n||''}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${fmt(pr)}</div>
+            <div style="font-size:11px;font-weight:600;color:${pct>=0?'#16a34a':'#dc2626'}">${fmtPct(pct)}</div>
+          </button>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
 function renderHome(){
+  // Greeting
+  const greetEl=document.getElementById('hero-greeting');
+  if(greetEl){
+    const user=getCurrentUser();
+    const name=user?.name?user.name.split(' ')[0]:'';
+    greetEl.textContent=getGreeting()+(name?', '+name:'')+'!';
+  }
   renderIndexCards('hidx');
   renderGainersLosers('hg','hl',5);
   renderChips();
+  renderRecentlyViewed();
   updateAuthBanner();
 }
 function renderIndexCards(id){
@@ -1111,6 +1170,7 @@ function fas(){
 // ===== STOCK DETAIL =====
 function openDetail(sym){
   if(!isLoggedIn()){openAuth('signin');return;}
+  addRecentlyViewed(sym);
   curTicker=sym;
   go('detail');
 }
