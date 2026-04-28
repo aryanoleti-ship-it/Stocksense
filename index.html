@@ -901,15 +901,9 @@ async function fetchHistorical(sym, range){
 // Groq-powered forecast: generates 7-day forecast based on trend + news
 async function genAIForecast(sym, lastPrice, pct, metaName){
   try{
-    const prompt=`You are a stock analysis AI. Given the following data for ${metaName} (${sym}) on NSE India:
-- Current price: ₹${lastPrice}
-- Today's change: ${pct>0?'+':''}${pct?.toFixed(2)||0}%
-- Sector: ${NMETA[sym]?.s||'Unknown'}
-
-Generate a realistic 7-day price forecast as a JSON array of 7 numbers (daily closing prices), starting from tomorrow. 
-Base it on: current momentum, typical volatility for this stock type, and general Indian market conditions in April 2026.
-Reply with ONLY a JSON array like: [1234.50, 1238.20, 1242.10, 1239.80, 1245.60, 1250.30, 1248.90]
-No explanation, just the array.`;
+    const changeStr=(pct>0?'+':'')+((pct||0).toFixed(2))+'%';
+    const sector=NMETA[sym]?.s||'Unknown';
+    const prompt='You are a stock analysis AI. Given: '+metaName+' ('+sym+') on NSE India. Current price: Rs'+lastPrice+'. Today change: '+changeStr+'. Sector: '+sector+'. Generate a realistic 7-day price forecast as a JSON array of 7 numbers (daily closing prices) starting from tomorrow. Reply with ONLY a JSON array like: [1234.50, 1238.20, 1242.10, 1239.80, 1245.60, 1250.30, 1248.90]. No explanation.';
     const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ},
