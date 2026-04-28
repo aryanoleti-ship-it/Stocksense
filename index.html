@@ -861,29 +861,39 @@ async function fetchHistorical(sym, range){
   const key=sym+'_'+range;
   if(histCache[key]) return histCache[key];
   const intervals={'1W':'1d','1M':'1d','3M':'1d','1Y':'1wk'};
-  const periods={'1W':8,'1M':31,'3M':91,'1Y':365};
+  const periods={'1W':10,'1M':35,'3M':95,'1Y':370};
   const interval=intervals[range]||'1d';
-  const days=periods[range]||31;
+  const days=periods[range]||35;
   const end=Math.floor(Date.now()/1000);
   const start=end-(days*86400);
-  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=${interval}&period1=${start}&period2=${end}`;
-  for(const proxy of PROXIES){
+  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=${interval}&period1=${start}&period2=${end}&includePrePost=false`;
+  const proxies=[
+    'https://corsproxy.io/?url=',
+    'https://api.allorigins.win/raw?url=',
+    'https://corsproxy.io/?'
+  ];
+  for(const proxy of proxies){
     try{
-      const r=await fetch(proxy+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
+      const fullUrl=proxy+encodeURIComponent(url);
+      const r=await fetch(fullUrl,{signal:AbortSignal.timeout(10000)});
       if(!r.ok) continue;
       const j=await r.json();
-      const closes=j?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
-      const timestamps=j?.chart?.result?.[0]?.timestamp;
-      if(!closes||!timestamps) continue;
+      const result=j?.chart?.result?.[0];
+      if(!result) continue;
+      const closes=result.indicators?.quote?.[0]?.close;
+      const timestamps=result.timestamp;
+      if(!closes||!timestamps||closes.length<2) continue;
       const data=[];
       for(let i=0;i<closes.length;i++){
-        if(closes[i]!=null) data.push({p:+closes[i].toFixed(2), t:timestamps[i]});
+        if(closes[i]!=null&&timestamps[i]!=null){
+          data.push({p:+closes[i].toFixed(2), t:timestamps[i]});
+        }
       }
       if(data.length>2){
         histCache[key]=data;
         return data;
       }
-    }catch(e){}
+    }catch(e){ continue; }
   }
   return null;
 }
@@ -1241,16 +1251,20 @@ async function drawStockChart(sym, d, meta, isDark){
   // Get AI forecast (7 days ahead)
   const forecastPrices=await genAIForecast(sym, currentPrice, pct, meta.n);
 
-  // Build forecast labels (next 7 trading days)
+  // Build forecast labels (next 7 trading days from today)
   const forecastLabels=[];
   const lastDate=new Date();
-  for(let i=1;i<=7;i++){
+  let added=0;
+  let offset=1;
+  while(added<7){
     const d2=new Date(lastDate);
-    d2.setDate(d2.getDate()+i);
-    // Skip weekends
-    if(d2.getDay()===0) d2.setDate(d2.getDate()+1);
-    if(d2.getDay()===6) d2.setDate(d2.getDate()+2);
-    forecastLabels.push(d2.toLocaleDateString('en-IN',{month:'short',day:'numeric'}));
+    d2.setDate(d2.getDate()+offset);
+    const day=d2.getDay();
+    if(day!==0&&day!==6){ // skip weekends
+      forecastLabels.push(d2.toLocaleDateString('en-IN',{month:'short',day:'numeric'}));
+      added++;
+    }
+    offset++;
   }
 
   // Combine: historical + forecast
