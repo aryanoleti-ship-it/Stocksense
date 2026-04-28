@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>StockSense - Live Indian Stocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f5f5f0;color:#1a1a1a}
+nav{background:#1a3a35;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:6px}
+.logo{color:#fff;font-weight:800;font-size:16px}
+.links{display:flex;gap:2px;flex-wrap:wrap}
+.links button{background:none;border:none;color:rgba(255,255,255,.65);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit}
+.links button:hover,.links button.active{color:#fff;background:rgba(255,255,255,.18)}
+.badge{border:1px solid rgba(255,255,255,.35);color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;background:transparent}
+.live-bar{background:#1a3a35;border-top:1px solid rgba(255,255,255,.08);padding:2px 20px;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.ldot{width:7px;height:7px;border-radius:50%}
+.ltxt{font-size:11px;color:rgba(255,255,255,.5)}
+.page{display:none}.page.active{display:block}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 20px}
+h1{font-size:22px;font-weight:800;color:#111;margin-bottom:4px}
+.sub{font-size:13px;color:#9ca3af;margin-bottom:20px}
+.hero{background:linear-gradient(135deg,#1a3a35,#2d6a5e);padding:52px 44px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;right:-80px;top:-80px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(74,160,144,.25),transparent 70%);pointer-events:none}
+.hero h1{color:#fff;font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:800;line-height:1.15;margin-bottom:14px}
+.hero p{color:rgba(255,255,255,.6);font-size:13px;max-width:420px;line-height:1.7;margin-bottom:24px}
+.htag{display:inline-flex;align-items:center;color:rgba(255,255,255,.65);font-size:11px;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;margin-bottom:16px}
+.sbox{display:flex;align-items:center;background:#fff;border-radius:10px;overflow:hidden;max-width:440px;margin-bottom:14px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.sbox input{flex:1;padding:11px 14px;border:none;outline:none;font-size:13px;font-family:inherit}
+.sbox button{margin:7px;padding:7px 14px;border-radius:8px;background:#2d6a5e;border:none;cursor:pointer;color:#fff;font-size:14px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.7);background:transparent;cursor:pointer;font-family:inherit}
+.chip:hover{background:rgba(255,255,255,.15);color:#fff}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;box-shadow:0 1px 6px rgba(0,0,0,.05);padding:18px}
+.icard{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px 18px;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+.iname{font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.ival{font-size:22px;font-weight:800;color:#111}
+.ichg{font-size:12px;font-weight:700;margin-top:3px}
+.up{color:#16a34a}.dn{color:#dc2626}
+.stitle{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+.srow{display:grid;grid-template-columns:100px 1fr 95px 75px;align-items:center;padding:9px 14px;border-bottom:1px solid #f3f4f6;cursor:pointer;background:transparent;border-left:none;border-right:none;border-top:none;width:100%;text-align:left;font-family:inherit}
+.srow:hover{background:#f9fafb}
+.srow .tk{font-weight:700;font-size:12px;color:#111}
+.srow .nm{font-size:11px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow .pr{font-size:12px;font-weight:600;color:#111;text-align:right}
+.srow .pc{font-size:12px;font-weight:700;text-align:right}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.sc{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px 18px}
+.sl{font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.sv{font-size:20px;font-weight:800;color:#111}
+.bt{background:#2d6a5e;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.bt:hover{background:#1e4a42}
+.bo{background:transparent;color:#2d6a5e;border:1.5px solid #2d6a5e;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.bo:hover{background:#f0f7f5}
+.slayout{display:flex;min-height:calc(100vh - 80px)}
+.aside{width:190px;flex-shrink:0;background:#fff;border-right:1px solid #e5e7eb;padding:14px;display:flex;flex-direction:column;gap:9px;overflow-y:auto;max-height:calc(100vh - 80px)}
+.mc{flex:1;padding:20px;overflow-y:auto}
+.ss{text-align:left;padding:7px 9px;border-radius:8px;cursor:pointer;border:none;background:transparent;width:100%;font-family:inherit}
+.ss:hover{background:#f0f7f5}
+.ss.on{background:#2d6a5e}
+.ss .st{font-size:11px;font-weight:700;color:#111}
+.ss.on .st,.ss.on .sn{color:#fff}
+.ss .sn{font-size:10px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rb{padding:4px 9px;border-radius:6px;font-size:10px;font-weight:600;border:none;cursor:pointer;background:#f0f0eb;color:#666;font-family:inherit}
+.rb.on{background:#2d6a5e;color:#fff}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.rbar{height:7px;border-radius:4px;background:#e5e7eb;overflow:hidden;margin:7px 0 3px}
+.rfill{height:100%;border-radius:4px;transition:width .7s}
+.aic{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.acard{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px}
+.albl{font-size:10px;font-weight:700;color:#2d6a5e;margin-bottom:5px}
+.atit{font-size:11px;font-weight:600;color:#374151;margin-bottom:3px}
+.atxt{font-size:11px;color:#6b7280;line-height:1.6}
+.krow{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+.ki .kl{font-size:10px;color:#9ca3af;margin-bottom:3px}
+.ki .kv{font-size:12px;font-weight:700;color:#111}
+.exbox{margin-top:10px;padding:14px;border-radius:10px;background:#f0f7f5;border:1px solid #d0e8e2;font-size:12px;color:#374151;line-height:1.7;display:none}
+.exbox.show{display:block}
+.cwrap{display:flex;gap:14px}
+.qp{width:190px;flex-shrink:0}
+.qq{text-align:left;padding:7px 11px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;font-size:11px;color:#374151;cursor:pointer;width:100%;margin-bottom:5px;font-family:inherit}
+.qq:hover{border-color:#2d6a5e;background:#f0f7f5}
+.cwin{flex:1;background:#fff;border-radius:12px;border:1px solid #e5e7eb;display:flex;flex-direction:column;height:500px}
+.chdr{padding:9px 14px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:7px}
+.cdot{width:7px;height:7px;border-radius:50%;background:#16a34a}
+.ctit{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em}
+.cmsgs{flex:1;padding:14px;overflow-y:auto}
+.mrow{display:flex;margin-bottom:14px}
+.mrow.u{justify-content:flex-end}
+.av{width:26px;height:26px;border-radius:50%;background:#2d6a5e;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-right:7px;flex-shrink:0;margin-top:2px}
+.bai{background:#f0f7f5;border:1px solid #d0e8e2;border-radius:12px 12px 12px 2px;padding:10px 14px;font-size:12px;line-height:1.7;max-width:500px}
+.bu{background:#2d6a5e;color:#fff;border-radius:12px 12px 2px 12px;padding:10px 14px;font-size:12px;line-height:1.7;max-width:500px}
+.cinp{border-top:1px solid #f3f4f6;padding:10px 14px;display:flex;align-items:center;gap:7px}
+.cinp input{flex:1;border:none;font-size:12px;color:#374151;background:transparent;outline:none}
+.gg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.gc{background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:12px}
+.gc:hover{box-shadow:0 4px 14px rgba(0,0,0,.07)}
+.gt{font-weight:700;font-size:12px;color:#111;margin-bottom:5px}
+.gd{font-size:11px;color:#6b7280;line-height:1.6}
+.ni{padding:16px 22px;border-bottom:1px solid #f3f4f6;display:flex;gap:10px}
+.ndot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.ntit{font-weight:600;font-size:13px;color:#111;margin-bottom:3px;line-height:1.4}
+.nsrc{font-size:11px;color:#9ca3af;margin-bottom:5px}
+.nsum{font-size:11px;color:#6b7280;margin-bottom:7px;line-height:1.6}
+.tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;display:inline-block}
+.tp{background:#dcfce7;color:#166534}.tn{background:#fee2e2;color:#991b1b}.tne{background:#dbeafe;color:#1e40af}.tm{background:#fef9c3;color:#854d0e}
+.prow{display:grid;grid-template-columns:100px 1fr 100px 100px 120px;align-items:center;padding:9px 18px;border-bottom:1px solid #f9fafb}
+.prow:hover{background:#f9fafb}
+.ptbl{display:grid;grid-template-columns:100px 1fr 100px 100px 120px;padding:9px 18px;border-bottom:1px solid #f3f4f6;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em}
+.bcard{background:#fff;border-radius:14px;border:1px solid #e5e7eb;padding:22px;box-shadow:0 2px 10px rgba(0,0,0,.05);transition:all .2s;text-decoration:none;display:block}
+.bcard:hover{box-shadow:0 8px 28px rgba(45,106,94,.14);transform:translateY(-2px);border-color:#2d6a5e}
+.blogo{font-size:26px;margin-bottom:10px}
+.bname{font-size:16px;font-weight:800;color:#111;margin-bottom:3px}
+.btag{font-size:10px;font-weight:600;padding:2px 9px;border-radius:20px;background:#f0f7f5;color:#2d6a5e;display:inline-block;margin-bottom:10px}
+.bdesc{font-size:12px;color:#6b7280;line-height:1.6;margin-bottom:14px}
+.bfeats{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.bfeat{font-size:11px;color:#374151;display:flex;align-items:center;gap:5px}
+.bfeat::before{content:'✓';color:#16a34a;font-weight:700}
+.bbtn{display:block;text-align:center;background:#2d6a5e;color:#fff;padding:9px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none}
+.bbtn:hover{background:#1e4a42}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.step{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:18px;text-align:center}
+.snum{width:34px;height:34px;border-radius:50%;background:#2d6a5e;color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.stit{font-size:13px;font-weight:700;color:#111;margin-bottom:5px}
+.sdesc{font-size:11px;color:#6b7280;line-height:1.5}
+.asg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.ms{background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all .15s}
+.ms:hover{border-color:#2d6a5e;box-shadow:0 2px 10px rgba(45,106,94,.1)}
+.ml .tk{font-weight:700;font-size:13px;color:#111}
+.ml .nm{font-size:10px;color:#9ca3af;margin-top:1px}
+.mr{text-align:right}
+.mr .pr{font-size:13px;font-weight:700;color:#111}
+.mr .pc{font-size:11px;font-weight:600;margin-top:1px}
+.spin{display:flex;align-items:center;justify-content:center;padding:50px;flex-direction:column;gap:10px;color:#9ca3af;font-size:12px}
+.sp{width:28px;height:28px;border:3px solid #e5e7eb;border-top-color:#2d6a5e;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+input:focus{outline:none}
+.sh::-webkit-scrollbar{display:none}
+.sh{-ms-overflow-style:none;scrollbar-width:none}
+@media(max-width:768px){.g4{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr}.aic{grid-template-columns:1fr}.krow{grid-template-columns:repeat(4,1fr)}.gg{grid-template-columns:repeat(2,1fr)}.slayout{flex-direction:column}.aside{width:100%;max-height:180px;flex-direction:row;flex-wrap:wrap}.cwrap{flex-direction:column}.qp{width:100%}.steps{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">StockSense</span>
+  <div class="links">
+    <button onclick="go('home')" id="n-home" class="active">Home</button>
+    <button onclick="go('market')" id="n-market">Market</button>
+    <button onclick="go('all')" id="n-all">All Stocks</button>
+    <button onclick="go('detail')" id="n-detail">Stock Detail</button>
+    <button onclick="go('port')" id="n-port">Portfolio</button>
+    <button onclick="go('gloss')" id="n-gloss">Glossary</button>
+    <button onclick="go('news')" id="n-news">News</button>
+    <button onclick="go('buy')" id="n-buy">Buy Stocks</button>
+    <button onclick="go('ai')" id="n-ai">Ask AI</button>
+  </div>
+  <span class="badge">Beginner Friendly</span>
+</nav><div class="live-bar"><div class="ldot" id="ldot" style="background:#f59e0b"></div><span class="ltxt" id="ltxt">Fetching live data...</span><button onclick="refresh()" style="font-size:10px;color:rgba(255,255,255,.4);background:none;border:none;cursor:pointer;margin-left:4px">&#8635;</button></div>
+<div id="p-home" class="page active"><div class="hero"><div style="position:relative;z-index:1"><div class="htag">&#10022; Live NSE/BSE data, refreshes every 60s</div><h1>Explore Indian stocks<br>with live market data.</h1><p>Real-time prices from NSE/BSE. Search any Nifty 50 stock, track your portfolio, and learn investing.</p><div class="sbox"><div style="flex:1;padding:9px 14px"><div style="font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Search Stock Symbol</div><input id="hs" placeholder="e.g. RELIANCE, TCS, INFY..." onkeydown="if(event.key==='Enter')hs()"/></div><button onclick="hs()">&#8594;</button></div><div class="chips" id="hchips"></div></div></div><div class="wrap"><div class="g4" id="hidx"></div><div class="g2"><div class="card" style="padding:0;overflow:hidden"><div style="padding:12px 14px 8px" class="stitle">Top Gainers Today</div><div id="hg"></div></div><div class="card" style="padding:0;overflow:hidden"><div style="padding:12px 14px 8px" class="stitle">Top Losers Today</div><div id="hl"></div></div></div></div></div>
+<div id="p-market" class="page"><div class="wrap"><h1>Market Overview</h1><p class="sub">Live NSE / BSE data — refreshes every 60 seconds</p><div class="g4" id="midx"></div><div class="g2"><div class="card"><div class="stitle">NIFTY 50 — 30 Day Trend</div><canvas id="nc" height="200"></canvas></div><div class="card"><div class="stitle">Sector Performance</div><canvas id="sc" height="200"></canvas></div></div><div class="g2"><div class="card" style="padding:0;overflow:hidden"><div style="padding:12px 14px 8px" class="stitle">Top Gainers</div><div id="mg"></div></div><div class="card" style="padding:0;overflow:hidden"><div style="padding:12px 14px 8px" class="stitle">Top Losers</div><div id="ml"></div></div></div></div></div>
+<div id="p-all" class="page"><div class="wrap"><h1>All Nifty 50 Stocks</h1><p class="sub">Live prices for all 50 Nifty 50 stocks — click any to view details</p><div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap"><input id="as-q" placeholder="Search symbol or name..." oninput="fas()" style="border:1px solid #e5e7eb;border-radius:8px;padding:9px 14px;font-size:12px;width:240px;background:#fff"/><select id="as-s" onchange="fas()" style="border:1px solid #e5e7eb;border-radius:8px;padding:9px 14px;font-size:12px;background:#fff;cursor:pointer"><option value="">All Sectors</option><option>IT</option><option>Banking</option><option>Auto</option><option>Pharma</option><option>Energy</option><option>FMCG</option><option>Telecom</option><option>Infra</option><option>Metals</option><option>Finance</option></select><select id="as-o" onchange="fas()" style="border:1px solid #e5e7eb;border-radius:8px;padding:9px 14px;font-size:12px;background:#fff;cursor:pointer"><option value="name">Sort: Name</option><option value="gain">Top Gainers</option><option value="lose">Top Losers</option><option value="phi">Price High</option><option value="plo">Price Low</option></select></div><div class="asg" id="asg"><div class="spin"><div class="sp"></div>Loading live data...</div></div></div></div>
+<div id="p-detail" class="page"><div class="slayout"><div class="aside sh"><div class="stitle" style="margin-bottom:0">Settings</div><div><div style="font-size:10px;color:#6b7280;font-weight:600;margin-bottom:5px">Range</div><div class="rg"><button class="rb on" onclick="sr('1W',this)">1W</button><button class="rb" onclick="sr('1M',this)">1M</button><button class="rb" onclick="sr('3M',this)">3M</button><button class="rb" onclick="sr('1Y',this)">1Y</button></div></div><div style="font-size:10px;color:#6b7280;font-weight:600">Nifty 50</div><div id="sbar"></div></div><div class="mc"><div id="sdet"><div class="spin"><div class="sp"></div>Select a stock from the sidebar</div></div></div></div></div>
+<div id="p-port" class="page"><div class="wrap"><h1>Portfolio Simulator</h1><p class="sub">Practice with &#8377;5,00,000 virtual money — uses live prices</p><div class="sgrid" id="pst"></div><div class="card" style="margin-bottom:18px"><div class="stitle">Add a Position</div><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div><div style="font-size:10px;color:#6b7280;font-weight:600;margin-bottom:3px">Ticker</div><input id="pt" placeholder="e.g. INFY" style="border:1px solid #e5e7eb;border-radius:8px;padding:7px 11px;font-size:12px;width:120px" onkeydown="if(event.key==='Enter')ap()"/></div><div><div style="font-size:10px;color:#6b7280;font-weight:600;margin-bottom:3px">Shares</div><input id="ps" type="number" value="10" min="1" style="border:1px solid #e5e7eb;border-radius:8px;padding:7px 11px;font-size:12px;width:80px"/></div><button class="bt" onclick="ap()">Add Position</button><span id="pe" style="font-size:11px;color:#dc2626"></span></div></div><div class="card" style="padding:0;overflow:hidden;margin-bottom:18px"><div class="ptbl"><span>Ticker</span><span>Company</span><span style="text-align:right">Invested</span><span style="text-align:right">Current</span><span style="text-align:right">Shares/Gain</span></div><div id="ptbl"><div style="text-align:center;font-size:12px;color:#9ca3af;padding:36px 0">No positions yet. Add your first stock above!</div></div></div><div class="g2"><div class="card"><div class="stitle">Allocation</div><div id="palloc"><div style="font-size:12px;color:#9ca3af;text-align:center;padding:28px 0">Add positions to see allocation</div></div></div><div class="card"><div class="stitle">Portfolio Value Trend</div><canvas id="pc" height="150"></canvas></div></div></div></div>
+<div id="p-gloss" class="page"><div class="wrap"><h1>Investing Glossary</h1><p class="sub">Plain-English definitions — no jargon, no confusion</p><input id="gq" placeholder="Search terms... e.g. dividend, beta, P/E" oninput="fg()" style="border:1px solid #e5e7eb;border-radius:8px;padding:9px 14px;font-size:12px;width:280px;margin-bottom:20px;background:#fff"/><div class="gg" id="gg"></div></div></div>
+<div id="p-news" class="page"><div class="wrap"><h1>Market News</h1><p class="sub">Latest headlines with AI sentiment summaries</p><div class="card" style="padding:0;overflow:hidden" id="nws"></div></div></div>
+<div id="p-buy" class="page"><div class="wrap"><h1>Where to Buy Stocks</h1><p class="sub">Trusted Indian brokers — open your Demat account and start investing</p><div style="background:#f0f7f5;border:1px solid #d0e8e2;border-radius:12px;padding:14px 18px;margin-bottom:24px;font-size:12px;color:#374151;line-height:1.7"><strong style="color:#2d6a5e">&#9432; Before you invest:</strong> You need a free Demat + Trading account. You need PAN + Aadhaar. Takes 10-15 minutes online. StockSense earns no commission from these links.</div><div class="steps"><div class="step"><div class="snum">1</div><div class="stit">Open Account</div><div class="sdesc">Choose a broker below and sign up online. Free to open.</div></div><div class="step"><div class="snum">2</div><div class="stit">Complete KYC</div><div class="sdesc">Upload PAN + Aadhaar. Verified in 1-2 days.</div></div><div class="step"><div class="snum">3</div><div class="stit">Add Money</div><div class="sdesc">Transfer funds via UPI or bank transfer.</div></div><div class="step"><div class="snum">4</div><div class="stit">Start Investing</div><div class="sdesc">Search a stock and place your first buy order!</div></div></div><div class="g3">
+<a href="https://zerodha.com" target="_blank" rel="noopener" class="bcard"><div class="blogo">&#127381;</div><div class="bname">Zerodha</div><div class="btag">India's #1 Broker</div><div class="bdesc">India's largest stockbroker with 1.3 crore+ clients. Zero brokerage on delivery trades. Best-in-class Kite platform.</div><div class="bfeats"><div class="bfeat">Zero brokerage on delivery</div><div class="bfeat">Rs 20 flat on intraday/F&O</div><div class="bfeat">Kite — best trading platform</div><div class="bfeat">Coin for direct mutual funds</div></div><div class="bbtn">Open Account at Zerodha &#8594;</div></a>
+<a href="https://groww.in" target="_blank" rel="noopener" class="bcard"><div class="blogo">&#127807;</div><div class="bname">Groww</div><div class="btag">Best for Beginners</div><div class="bdesc">Most beginner-friendly investing app in India. Simple UI, great for first-time investors. Also offers mutual funds and US stocks.</div><div class="bfeats"><div class="bfeat">Extremely simple app interface</div><div class="bfeat">Zero brokerage on delivery</div><div class="bfeat">Mutual funds with no commission</div><div class="bfeat">US stocks investing available</div></div><div class="bbtn">Open Account at Groww &#8594;</div></a>
+<a href="https://upstox.com" target="_blank" rel="noopener" class="bcard"><div class="blogo">&#128200;</div><div class="bname">Upstox</div><div class="btag">Backed by Ratan Tata</div><div class="bdesc">Fast-growing discount broker backed by Ratan Tata and Tiger Global. Clean app, competitive pricing, strong research tools.</div><div class="bfeats"><div class="bfeat">Zero brokerage on delivery</div><div class="bfeat">Rs 20 flat on intraday</div><div class="bfeat">Advanced charting tools</div><div class="bfeat">Options trading support</div></div><div class="bbtn">Open Account at Upstox &#8594;</div></a>
+<a href="https://www.angelone.in" target="_blank" rel="noopener" class="bcard"><div class="blogo">&#128081;</div><div class="bname">Angel One</div><div class="btag">Full-Service + Discount</div><div class="bdesc">One of India's oldest brokers, now tech-first. SmartAPI for algo trading and strong research reports.</div><div class="bfeats"><div class="bfeat">Zero brokerage on delivery</div><div class="bfeat">SmartAPI for algo trading</div><div class="bfeat">Strong research & tips</div><div class="bfeat">IPO applications built-in</div></div><div class="bbtn">Open Account at Angel One &#8594;</div></a>
+<a href="https://www.icicidirect.com" target="_blank" rel="noopener" class="bcard"><div class="blogo">&#127968;</div><div class="bname">ICICI Direct</div><div class="btag">Bank-Backed Safety</div><div class="bdesc">Backed by ICICI Bank. Best for investors who want their bank and broker in one place. Maximum trust and safety.</div><div class="bfeats"><div class="bfeat">Linked to ICICI Bank account</div><div class="bfeat">3-in-1 account available</div><div class="bfeat">Strong research reports</div><div class="bfeat">NRI investing supported</div></div><div class="bbtn">Open Account at ICICI Direct &#8594;</div></a>
+<a href="https://www.hdfcsec.com" target="_blank" rel="noopener" class="bcard"><div class="blogo">&#127970;</div><div class="bname">HDFC Securities</div><div class="btag">HDFC Bank Backed</div><div class="bdesc">HDFC Bank's brokerage arm. Ideal for existing HDFC Bank customers. Seamless fund transfers and decades of experience.</div><div class="bfeats"><div class="bfeat">Seamless HDFC Bank integration</div><div class="bfeat">3-in-1 account available</div><div class="bfeat">Dedicated relationship manager</div><div class="bfeat">NRI & HNI services</div></div><div class="bbtn">Open Account at HDFC Securities &#8594;</div></a>
+</div><div style="margin-top:28px;padding:18px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;font-size:12px;color:#6b7280;line-height:1.7"><strong style="color:#111;display:block;margin-bottom:6px">&#9888; Disclaimer</strong>StockSense is educational only. Broker links are informational — we earn no commission. Always read terms before opening any account. Investing involves risk — only invest what you can afford to lose.</div></div></div>
+<div id="p-ai" class="page"><div class="wrap"><h1>Ask the AI</h1><p class="sub">Ask anything about investing — powered by <strong style="color:#2d6a5e">Groq AI</strong></p><div class="cwrap"><div class="qp"><div class="card" style="padding:14px"><div class="stitle">Quick Questions</div><button class="qq" onclick="sc('What is a stock?')">What is a stock?</button><button class="qq" onclick="sc('How do I start investing in India?')">How do I start investing?</button><button class="qq" onclick="sc('What is a P/E ratio?')">What is a P/E ratio?</button><button class="qq" onclick="sc('NSE vs BSE?')">NSE vs BSE?</button><button class="qq" onclick="sc('What is Nifty 50?')">What is Nifty 50?</button><button class="qq" onclick="sc('Is investing risky?')">Is investing risky?</button><button class="qq" onclick="sc('What is SIP?')">What is SIP?</button><button class="qq" onclick="sc('Which broker should I use in India?')">Which broker to use?</button></div></div><div style="flex:1;display:flex;flex-direction:column"><div class="cwin"><div class="chdr"><div class="cdot"></div><span class="ctit">StockSense AI &middot; Groq</span></div><div class="cmsgs sh" id="cm"></div><div class="cinp"><input id="ci" placeholder="Ask me anything about investing in India..." onkeydown="if(event.key==='Enter')sc()"/><button class="bt" onclick="sc()" id="csend">Send &#8594;</button></div></div></div></div></div></div>
+<script>
+const PROXY='https://corsproxy.io/?';
+const GROQ='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';
+const N50=['RELIANCE.NS','TCS.NS','HDFCBANK.NS','INFY.NS','ICICIBANK.NS','HINDUNILVR.NS','ITC.NS','SBIN.NS','BHARTIARTL.NS','KOTAKBANK.NS','LT.NS','AXISBANK.NS','ASIANPAINT.NS','MARUTI.NS','SUNPHARMA.NS','TITAN.NS','BAJFINANCE.NS','WIPRO.NS','ULTRACEMCO.NS','NESTLEIND.NS','POWERGRID.NS','NTPC.NS','TATAMOTORS.NS','TECHM.NS','HCLTECH.NS','BAJAJFINSV.NS','ONGC.NS','JSWSTEEL.NS','TATASTEEL.NS','ADANIENT.NS','ADANIPORTS.NS','COALINDIA.NS','DIVISLAB.NS','DRREDDY.NS','EICHERMOT.NS','GRASIM.NS','HEROMOTOCO.NS','HINDALCO.NS','INDUSINDBK.NS','M&M.NS','SBILIFE.NS','SHRIRAMFIN.NS','TATACONSUM.NS','APOLLOHOSP.NS','BAJAJ-AUTO.NS','BPCL.NS','BRITANNIA.NS','CIPLA.NS','HDFCLIFE.NS','UPL.NS'];
+const NMETA={
+'RELIANCE.NS':{n:'Reliance Industries',s:'Energy'},'TCS.NS':{n:'TCS',s:'IT'},'HDFCBANK.NS':{n:'HDFC Bank',s:'Banking'},'INFY.NS':{n:'Infosys',s:'IT'},'ICICIBANK.NS':{n:'ICICI Bank',s:'Banking'},'HINDUNILVR.NS':{n:'HUL',s:'FMCG'},'ITC.NS':{n:'ITC Ltd',s:'FMCG'},'SBIN.NS':{n:'SBI',s:'Banking'},'BHARTIARTL.NS':{n:'Bharti Airtel',s:'Telecom'},'KOTAKBANK.NS':{n:'Kotak Bank',s:'Banking'},'LT.NS':{n:'Larsen & Toubro',s:'Infra'},'AXISBANK.NS':{n:'Axis Bank',s:'Banking'},'ASIANPAINT.NS':{n:'Asian Paints',s:'FMCG'},'MARUTI.NS':{n:'Maruti Suzuki',s:'Auto'},'SUNPHARMA.NS':{n:'Sun Pharma',s:'Pharma'},'TITAN.NS':{n:'Titan',s:'FMCG'},'BAJFINANCE.NS':{n:'Bajaj Finance',s:'Finance'},'WIPRO.NS':{n:'Wipro',s:'IT'},'ULTRACEMCO.NS':{n:'UltraTech Cement',s:'Infra'},'NESTLEIND.NS':{n:'Nestle India',s:'FMCG'},'POWERGRID.NS':{n:'Power Grid',s:'Energy'},'NTPC.NS':{n:'NTPC',s:'Energy'},'TATAMOTORS.NS':{n:'Tata Motors',s:'Auto'},'TECHM.NS':{n:'Tech Mahindra',s:'IT'},'HCLTECH.NS':{n:'HCL Tech',s:'IT'},'BAJAJFINSV.NS':{n:'Bajaj Finserv',s:'Finance'},'ONGC.NS':{n:'ONGC',s:'Energy'},'JSWSTEEL.NS':{n:'JSW Steel',s:'Metals'},'TATASTEEL.NS':{n:'Tata Steel',s:'Metals'},'ADANIENT.NS':{n:'Adani Enterprises',s:'Infra'},'ADANIPORTS.NS':{n:'Adani Ports',s:'Infra'},'COALINDIA.NS':{n:'Coal India',s:'Energy'},'DIVISLAB.NS':{n:'Divi Labs',s:'Pharma'},'DRREDDY.NS':{n:"Dr Reddy's",s:'Pharma'},'EICHERMOT.NS':{n:'Eicher Motors',s:'Auto'},'GRASIM.NS':{n:'Grasim',s:'Infra'},'HEROMOTOCO.NS':{n:'Hero MotoCorp',s:'Auto'},'HINDALCO.NS':{n:'Hindalco',s:'Metals'},'INDUSINDBK.NS':{n:'IndusInd Bank',s:'Banking'},'M&M.NS':{n:'Mahindra & Mahindra',s:'Auto'},'SBILIFE.NS':{n:'SBI Life',s:'Finance'},'SHRIRAMFIN.NS':{n:'Shriram Finance',s:'Finance'},'TATACONSUM.NS':{n:'Tata Consumer',s:'FMCG'},'APOLLOHOSP.NS':{n:'Apollo Hospitals',s:'Pharma'},'BAJAJ-AUTO.NS':{n:'Bajaj Auto',s:'Auto'},'BPCL.NS':{n:'BPCL',s:'Energy'},'BRITANNIA.NS':{n:'Britannia',s:'FMCG'},'CIPLA.NS':{n:'Cipla',s:'Pharma'},'HDFCLIFE.NS':{n:'HDFC Life',s:'Finance'},'UPL.NS':{n:'UPL',s:'Pharma'}
+};
+const IDX_SYMS=['^NSEI','^BSESN','^NSEBANK','NIFTYIT.NS'];
+const IDX_NAMES={'nifty50':'NIFTY 50','sensex':'SENSEX','niftybank':'NIFTY BANK','niftyit':'NIFTY IT'};
+const IDX_MAP={'^NSEI':'nifty50','^BSESN':'sensex','^NSEBANK':'niftybank','NIFTYIT.NS':'niftyit'};
+const SECTORS=[{s:'IT',c:0},{s:'Banking',c:0},{s:'Auto',c:0},{s:'Pharma',c:0},{s:'Energy',c:0},{s:'FMCG',c:0},{s:'Telecom',c:0},{s:'Infra',c:0},{s:'Metals',c:0},{s:'Finance',c:0}];
+const INDICES=[{id:'nifty50',n:'NIFTY 50',v:22147,c:213.4,p:0.97},{id:'sensex',n:'SENSEX',v:72831,c:698.6,p:0.97},{id:'niftybank',n:'NIFTY BANK',v:46240,c:-120.3,p:-0.26},{id:'niftyit',n:'NIFTY IT',v:34812,c:-384.1,p:-1.09}];
+let liveStocks={};
+let curTicker='RELIANCE.NS';
+let curRange='1W';
+let port={cash:500000,pos:[],hist:[{l:'Start',v:500000}]};
+let chatHist=[];
+let sChart=null,pChart=null,nChart=null,secChart=null;
+const GLOSSARY=[{t:'Stock',d:"A tiny piece of ownership in a company. Buying 1 share of TCS makes you a part-owner of Tata Consultancy Services."},{t:'Nifty 50',d:"India's most famous stock index, tracking the 50 largest companies on NSE."},{t:'Sensex',d:"The BSE's flagship index tracking 30 large, well-established companies."},{t:'NSE',d:"National Stock Exchange — India's largest stock exchange by trading volume, based in Mumbai."},{t:'BSE',d:"Bombay Stock Exchange — Asia's oldest stock exchange, founded in 1875, based in Mumbai."},{t:'Dividend',d:"A cash payment companies make to shareholders. ITC and HDFC Bank are known for paying good dividends."},{t:'P/E Ratio',d:"Price-to-Earnings ratio. Shows how much you pay per Rs1 of profit. Lower can mean better value."},{t:'Market Cap',d:"Total value of all a company's shares. Reliance is one of India's most valuable companies by market cap."},{t:'Large Cap',d:"Top 100 companies by market cap as classified by SEBI. More stable — a good starting point for beginners."},{t:'Mid Cap',d:"Companies ranked 101st to 250th by market cap. More growth potential but also more risk."},{t:'Bull Market',d:"When stock prices are rising. Investors are optimistic and buying."},{t:'Bear Market',d:"When stock prices fall 20%+ from recent highs. Happened in India during COVID-19 crash of March 2020."},{t:'SIP',d:"Systematic Investment Plan — investing a fixed amount every month. Best habit for Indian beginner investors."},{t:'Demat Account',d:"A digital account that holds your shares electronically. You need one (via Zerodha, Groww, etc.) to invest."},{t:'Index Fund',d:"A fund that automatically buys all stocks in an index like Nifty 50. Lowest-cost way to invest in India."},{t:'Beta',d:"How much a stock moves vs the market. Beta 1.5 means it moves 50% more than Nifty — higher risk and reward."},{t:'EPS',d:"Earnings Per Share — how much profit the company made per share. Higher EPS generally means stronger company."},{t:'52-Week High/Low',d:"The highest and lowest price in the past year. Useful to see if a stock is near its best or worst level."},{t:'SEBI',d:"Securities and Exchange Board of India — India's market regulator, like the US has the SEC. Protects investors."},{t:'FII / DII',d:"Foreign/Domestic Institutional Investors. When FIIs buy heavily, markets often rise."},{t:'Circuit Breaker',d:"When a stock moves too much in one day, trading is halted temporarily. Prevents panic-driven extreme moves."},{t:'Bonus Share',d:"Free extra shares given to existing shareholders. Company gives 1 extra share for every 2 you hold."}];
+const NEWS=[{title:'SEBI tightens F&O rules to protect retail investors from derivatives losses',src:'Economic Times',time:'1 hour ago',sum:'SEBI has introduced new position limits and margin requirements for futures & options trading.',why:'Positive for long-term investors',sent:'pos',tags:[]},{title:'Reliance Jio announces 5G expansion to 100 new cities in Q2 2026',src:'Mint',time:'2 hours ago',sum:'Jio plans to cover 100 more tier-2 cities with 5G by September 2026.',why:'Bullish for BHARTIARTL, RELIANCE',sent:'pos',tags:['BHARTIARTL.NS','RELIANCE.NS']},{title:'Infosys and TCS face headwinds as US tech companies cut IT budgets',src:'Business Standard',time:'4 hours ago',sum:'Major US clients are reducing discretionary IT spending.',why:'Bearish for IT stocks',sent:'neg',tags:['INFY.NS','TCS.NS']},{title:'RBI holds repo rate steady at 6.25% — markets react with cautious optimism',src:'NDTV Profit',time:'5 hours ago',sum:'The Reserve Bank of India kept interest rates unchanged.',why:'Positive for banking stocks',sent:'neu',tags:['HDFCBANK.NS']},{title:'Tata Motors EV sales hit record high — domestic market share grows to 12%',src:'Auto Today',time:'6 hours ago',sum:'Tata Motors sold over 18,000 EVs in March, capturing 12% of the domestic EV market.',why:'Bullish for TATAMOTORS',sent:'pos',tags:['TATAMOTORS.NS']},{title:'Crude oil rises to $88/barrel — likely to pressure aviation and paints sector',src:'Reuters',time:'8 hours ago',sum:'Rising crude prices increase input costs for airlines and paint companies.',why:'Mixed — negative for oil importers',sent:'mix',tags:[]},{title:'HDFC Bank Q4 results: Net profit up 37% YoY, NIM stable at 3.44%',src:'Moneycontrol',time:'10 hours ago',sum:'HDFC Bank reported strong quarterly earnings with healthy loan growth.',why:'Strongly bullish for HDFCBANK',sent:'pos',tags:['HDFCBANK.NS']},{title:'India GDP growth forecast revised up to 7.2% for FY2026-27 by IMF',src:'Financial Express',time:'12 hours ago',sum:"The IMF upgraded India's growth forecast, citing strong domestic consumption.",why:'Positive for broad market',sent:'pos',tags:[]}];
+
+// HELPERS
+function fmt(n){return (n||0).toLocaleString('en-IN');}
+function fmtCap(v){if(!v)return 'N/A';const cr=v/1e7;if(cr>=100000)return (cr/100000).toFixed(1)+'L Cr';if(cr>=1000)return (cr/1000).toFixed(1)+'K Cr';return Math.round(cr)+' Cr';}
+function fmtVol(v){if(!v)return 'N/A';if(v>=1e7)return (v/1e7).toFixed(1)+'Cr';if(v>=1e5)return (v/1e5).toFixed(1)+'L';return v.toLocaleString('en-IN');}
+function calcRisk(b){return !b?'Medium':b<0.8?'Low':b<1.2?'Medium':'High';}
+function genPrices(base,days,vol){vol=vol||0.012;const d=[];let p=base*(1-(days/365)*0.07);const now=new Date();for(let i=days;i>=0;i--){const dt=new Date(now);dt.setDate(dt.getDate()-i);p=Math.max(p*(1+(Math.random()-0.46)*vol),1);d.push({x:dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),y:Math.round(p)});}return d;}
+
+// NAVIGATION
+function go(id,ticker){
+  document.querySelectorAll('.page').forEach(function(p){p.style.display='none';});
+  document.querySelectorAll('.links button').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('p-'+id).style.display='block';
+  var nb=document.getElementById('n-'+id);if(nb)nb.classList.add('active');
+  if(ticker)curTicker=ticker;
+  if(id==='market')renderMarket();
+  if(id==='all')renderAllStocks();
+  if(id==='detail')renderStockDetail();
+  if(id==='port')renderPortfolio();
+  if(id==='gloss')renderGlossary();
+  if(id==='news')renderNews();
+  if(id==='ai')initChat();
+}
+function hs(){var q=document.getElementById('hs').value.trim().toUpperCase();var sym=q+'.NS';if(NMETA[sym]){go('detail',sym);}else{alert('Try: RELIANCE, TCS, INFY, HDFCBANK...');}}
+
+// LIVE DATA
+async function fetchLive(){
+  try{
+    var allSyms=[...N50,...IDX_SYMS].join(',');
+    var url=PROXY+encodeURIComponent('https://query1.finance.yahoo.com/v7/finance/quote?symbols='+allSyms+'&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,marketCap,trailingPE,epsTrailingTwelveMonths,dividendYield,beta,regularMarketVolume,fiftyTwoWeekHigh,fiftyTwoWeekLow,shortName');
+    var r=await fetch(url);var data=await r.json();
+    var results=(data&&data.quoteResponse&&data.quoteResponse.result)||[];
+    if(!results.length)throw new Error('No data');
+    for(var i=0;i<N50.length;i++){
+      var sym=N50[i];
+      var q=results.find(function(r){return r.symbol===sym;});
+      if(q){liveStocks[sym]={p:Math.round(q.regularMarketPrice*100)/100,c:Math.round(q.regularMarketChange*100)/100,pct:Math.round(q.regularMarketChangePercent*100)/100,mc:fmtCap(q.marketCap),pe:q.trailingPE?q.trailingPE.toFixed(1):'N/A',eps:q.epsTrailingTwelveMonths?q.epsTrailingTwelveMonths.toFixed(2):'N/A',div:q.dividendYield?(q.dividendYield*100).toFixed(2)+'%':'0%',beta:q.beta?q.beta.toFixed(2):'N/A',vol:fmtVol(q.regularMarketVolume),h52:Math.round(q.fiftyTwoWeekHigh||0),l52:Math.round(q.fiftyTwoWeekLow||0),risk:calcRisk(q.beta)};}
+    }
+    var idxKeys=Object.keys(IDX_MAP);
+    for(var j=0;j<idxKeys.length;j++){
+      var ys=idxKeys[j];var id=IDX_MAP[ys];
+      var q2=results.find(function(r){return r.symbol===ys;});
+      if(q2){var idx=INDICES.find(function(i){return i.id===id;});if(idx){idx.v=Math.round(q2.regularMarketPrice||idx.v);idx.c=Math.round((q2.regularMarketChange||idx.c)*10)/10;idx.p=Math.round((q2.regularMarketChangePercent||idx.p)*100)/100;}}
+    }
+    var sm={};
+    for(var k=0;k<N50.length;k++){var s=liveStocks[N50[k]];var meta=NMETA[N50[k]];if(s&&meta){if(!sm[meta.s])sm[meta.s]=[];sm[meta.s].push(s.pct);}}
+    for(var l=0;l<SECTORS.length;l++){var sec=SECTORS[l];if(sm[sec.s]&&sm[sec.s].length){sec.c=Math.round(sm[sec.s].reduce(function(a,b){return a+b;},0)/sm[sec.s].length*100)/100;}}
+    document.getElementById('ldot').style.background='#16a34a';
+    document.getElementById('ltxt').textContent='Live \u00b7 Updated '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    renderHome();
+    if(document.getElementById('p-all').style.display!=='none')renderAllStocks();
+    if(document.getElementById('p-market').style.display!=='none')renderMarket();
+  }catch(e){
+    document.getElementById('ldot').style.background='#f59e0b';
+    document.getElementById('ltxt').textContent='Using fallback data';
+    renderHome();
+  }
+}
+function refresh(){document.getElementById('ldot').style.background='#f59e0b';document.getElementById('ltxt').textContent='Fetching...';fetchLive();}
+
+// GET STOCK DATA
+function getS(sym){
+  var live=liveStocks[sym]||{};
+  var meta=NMETA[sym]||{n:sym,s:'Unknown'};
+  var fb={p:1000,c:0,pct:0,mc:'N/A',pe:'N/A',eps:'N/A',div:'N/A',beta:'N/A',vol:'N/A',h52:0,l52:0,risk:'Medium'};
+  return Object.assign({},fb,live,{sym:sym,name:meta.n,sector:meta.s});
+}
+function allS(){return N50.map(function(s){return getS(s);});}
+
+// INDEX CARD HTML
+function idxHTML(idx){var up=idx.c>=0;return '<div class="icard"><div class="iname">'+idx.n+'</div><div class="ival">'+fmt(idx.v)+'</div><div class="ichg '+(up?'up':'dn')+'">'+(up?'+':'')+idx.c.toFixed(1)+' ('+(up?'+':'')+idx.p.toFixed(2)+'%)</div></div>';}
+
+// STOCK ROW HTML
+function srowHTML(s,sym){var up=s.pct>=0;return '<button class="srow" onclick="go(\'detail\',\''+sym+'\')"><span class="tk">'+sym.replace('.NS','')+'</span><span class="nm">'+s.name+'</span><span class="pr">&#8377;'+fmt(s.p)+'</span><span class="pc '+(up?'up':'dn')+'">'+(up?'+':'')+s.pct.toFixed(2)+'%</span></button>';}
+// HOME
+function renderHome(){
+  document.getElementById('hidx').innerHTML=INDICES.map(function(i){return idxHTML(i);}).join('');
+  var sorted=N50.map(function(s){return Object.assign({sym:s},getS(s));}).sort(function(a,b){return b.pct-a.pct;});
+  document.getElementById('hg').innerHTML=sorted.filter(function(s){return s.pct>0;}).slice(0,3).map(function(s){return srowHTML(s,s.sym);}).join('');
+  document.getElementById('hl').innerHTML=sorted.filter(function(s){return s.pct<0;}).slice(0,3).map(function(s){return srowHTML(s,s.sym);}).join('');
+  var chips=['RELIANCE','TCS','HDFCBANK','INFY','BHARTIARTL','TATAMOTORS','SUNPHARMA'];
+  document.getElementById('hchips').innerHTML=chips.map(function(t){return '<button class="chip" onclick="go(\'detail\',\''+t+'.NS\')">'+t+'</button>';}).join('');
+}
+
+// MARKET
+function renderMarket(){
+  document.getElementById('midx').innerHTML=INDICES.map(function(i){return idxHTML(i);}).join('');
+  var sorted=N50.map(function(s){return Object.assign({sym:s},getS(s));}).sort(function(a,b){return b.pct-a.pct;});
+  document.getElementById('mg').innerHTML=sorted.filter(function(s){return s.pct>0;}).slice(0,5).map(function(s){return srowHTML(s,s.sym);}).join('');
+  document.getElementById('ml').innerHTML=sorted.filter(function(s){return s.pct<0;}).slice(0,3).map(function(s){return srowHTML(s,s.sym);}).join('');
+  var nData=genPrices(INDICES[0].v,30,0.008);
+  if(nChart)nChart.destroy();
+  nChart=new Chart(document.getElementById('nc'),{type:'line',data:{labels:nData.map(function(d){return d.x;}),datasets:[{data:nData.map(function(d){return d.y;}),borderColor:'#2d6a5e',borderWidth:2,fill:true,backgroundColor:'rgba(45,106,94,.1)',pointRadius:0,tension:.4}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:6,font:{size:10}},grid:{display:false}},y:{ticks:{callback:function(v){return (v/1000).toFixed(0)+'k';},font:{size:10}},grid:{color:'#f0f0f0'}}}}});
+  if(secChart)secChart.destroy();
+  secChart=new Chart(document.getElementById('sc'),{type:'bar',data:{labels:SECTORS.map(function(s){return s.s;}),datasets:[{data:SECTORS.map(function(s){return s.c;}),backgroundColor:SECTORS.map(function(s){return s.c>=0?'#2d6a5e':'#ef4444';}),borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{callback:function(v){return v+'%';},font:{size:10}},grid:{color:'#f0f0f0'}}}}});
+}
+
+// ALL STOCKS
+function renderAllStocks(){
+  var q=(document.getElementById('as-q').value||'').toLowerCase();
+  var sec=document.getElementById('as-s').value;
+  var ord=document.getElementById('as-o').value;
+  var list=N50.map(function(sym){return Object.assign({sym:sym},getS(sym));});
+  if(q)list=list.filter(function(s){return s.sym.toLowerCase().indexOf(q)>-1||s.name.toLowerCase().indexOf(q)>-1;});
+  if(sec)list=list.filter(function(s){return s.sector===sec;});
+  if(ord==='gain')list.sort(function(a,b){return b.pct-a.pct;});
+  else if(ord==='lose')list.sort(function(a,b){return a.pct-b.pct;});
+  else if(ord==='phi')list.sort(function(a,b){return b.p-a.p;});
+  else if(ord==='plo')list.sort(function(a,b){return a.p-b.p;});
+  else list.sort(function(a,b){return a.name.localeCompare(b.name);});
+  document.getElementById('asg').innerHTML=list.length?list.map(function(s){var up=s.pct>=0;return '<div class="ms" onclick="go(\'detail\',\''+s.sym+'\')"><div class="ml"><div class="tk">'+s.sym.replace('.NS','')+'</div><div class="nm">'+s.name+' \u00b7 '+s.sector+'</div></div><div class="mr"><div class="pr">&#8377;'+fmt(s.p)+'</div><div class="pc '+(up?'up':'dn')+'">'+(up?'+':'')+s.pct.toFixed(2)+'%</div></div></div>';}).join(''):'<div style="text-align:center;padding:40px;color:#9ca3af;font-size:13px">No stocks found</div>';
+}
+function fas(){renderAllStocks();}
+// STOCK DETAIL
+function renderStockDetail(){
+  var sym=curTicker;var s=getS(sym);var up=s.pct>=0;
+  var days={W:7,M:30,'3M':90,Y:365}[curRange]||7;
+  var priceData=genPrices(s.p,days);
+  var riskPct={Low:25,Medium:55,High:85}[s.risk]||55;
+  var riskColor={Low:'#16a34a',Medium:'#d97706',High:'#dc2626'}[s.risk]||'#d97706';
+  document.getElementById('sbar').innerHTML=N50.slice(0,20).map(function(t){return '<button class="ss'+(t===sym?' on':'')+'" onclick="selectStock(\''+t+'\')"><div class="st">'+t.replace('.NS','')+'</div><div class="sn">'+(NMETA[t]?NMETA[t].n:t)+'</div></button>';}).join('');
+  document.getElementById('sdet').innerHTML='<div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Viewing &rsaquo; '+s.sector+' &rsaquo; Nifty 50</div><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px"><div><div style="font-size:28px;font-weight:900;color:#111;letter-spacing:-0.5px">'+sym.replace('.NS','')+'</div><div style="font-size:12px;color:#6b7280">'+s.name+'</div></div><div style="display:flex;gap:20px;text-align:center"><div><div style="font-size:13px;font-weight:700;color:'+(up?'#16a34a':'#dc2626')+'">'+(up?'Up':'Down')+'</div><div style="font-size:10px;color:#9ca3af">Trend</div></div><div><div style="font-size:13px;font-weight:700;color:#374151">'+Math.min(95,Math.max(20,Math.round(50+s.pct*8)))+'%</div><div style="font-size:10px;color:#9ca3af">Signal</div></div><div><div style="font-size:13px;font-weight:700;color:#374151">'+curRange+'</div><div style="font-size:10px;color:#9ca3af">Range</div></div></div></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><span style="font-size:24px;font-weight:800;color:#111">&#8377;'+fmt(s.p)+'</span><span style="font-size:13px;font-weight:700;color:'+(up?'#16a34a':'#dc2626')+'">'+(up?'+':'')+s.c+' ('+(up?'+':'')+s.pct+'%)</span></div><div class="card" style="margin-bottom:14px"><div class="stitle">Price + Forecast</div><canvas id="sc2" height="180"></canvas><button class="bo" style="margin-top:12px" onclick="document.getElementById(\'exb\').classList.toggle(\'show\')">&#10022; Explain this stock in plain English</button><div class="exbox" id="exb"><p style="margin-bottom:6px"><strong>Sector:</strong> '+s.sector+'</p><p style="margin-bottom:6px"><strong>52W Range:</strong> &#8377;'+fmt(s.l52)+' \u2014 &#8377;'+fmt(s.h52)+'</p><p style="font-size:10px;color:#9ca3af;font-style:italic">Educational only \u2014 not financial advice.</p></div></div><div class="card" style="margin-bottom:14px"><div class="stitle">Key Statistics</div><div class="krow"><div class="ki"><div class="kl">Market Cap</div><div class="kv">'+s.mc+'</div></div><div class="ki"><div class="kl">P/E Ratio</div><div class="kv">'+s.pe+'</div></div><div class="ki"><div class="kl">EPS</div><div class="kv">'+(s.eps!=='N/A'?'&#8377;'+s.eps:s.eps)+'</div></div><div class="ki"><div class="kl">Dividend</div><div class="kv">'+s.div+'</div></div><div class="ki"><div class="kl">Beta</div><div class="kv">'+s.beta+'</div></div><div class="ki"><div class="kl">Avg Volume</div><div class="kv">'+s.vol+'</div></div><div class="ki"><div class="kl">52W High</div><div class="kv">&#8377;'+fmt(s.h52)+'</div></div><div class="ki"><div class="kl">52W Low</div><div class="kv">&#8377;'+fmt(s.l52)+'</div></div></div></div><div class="card"><div class="stitle">Risk Level</div><div style="display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-bottom:3px"><span>Low</span><span>Medium</span><span>High</span></div><div class="rbar"><div class="rfill" style="width:'+riskPct+'%;background:'+riskColor+'"></div></div><div style="font-size:11px;font-weight:700;margin-top:3px;color:'+riskColor+'">'+s.risk+' Risk</div></div>';
+  setTimeout(function(){
+    var canvas=document.getElementById('sc2');if(!canvas)return;
+    if(sChart)sChart.destroy();
+    var split=Math.floor(priceData.length*0.82);
+    var base=priceData[split-1]?priceData[split-1].y:s.p;
+    var hist=priceData.map(function(d,i){return i<split?d.y:null;});
+    var fore=priceData.map(function(d,i){return i>=split-1?Math.round(base*(1+(i-split+1)*0.003+(Math.random()-0.3)*0.005)):null;});
+    sChart=new Chart(canvas,{type:'line',data:{labels:priceData.map(function(d){return d.x;}),datasets:[{label:'Historical',data:hist,borderColor:'#2d6a5e',borderWidth:2,fill:true,backgroundColor:'rgba(45,106,94,.1)',pointRadius:0,tension:.4,spanGaps:false},{label:'Forecast',data:fore,borderColor:'#f97316',borderWidth:2,borderDash:[5,4],fill:false,pointRadius:0,tension:.4,spanGaps:false}]},options:{plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:16}}},scales:{x:{ticks:{maxTicksLimit:6,font:{size:10}},grid:{display:false}},y:{ticks:{callback:function(v){return 'Rs'+(v/1000).toFixed(1)+'k';},font:{size:10}},grid:{color:'#f0f0f0'}}}}});
+  },50);
+}
+function selectStock(sym){curTicker=sym;document.querySelectorAll('.ss').forEach(function(b){b.classList.remove('on');});event.currentTarget.classList.add('on');renderStockDetail();}
+function sr(r,btn){curRange=r;document.querySelectorAll('.rb').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');renderStockDetail();}
+// PORTFOLIO
+function renderPortfolio(){
+  var portVal=port.pos.reduce(function(s,p){var st=liveStocks[p.sym];return s+(st?st.p*p.sh:p.bp*p.sh);},0);
+  var invested=port.pos.reduce(function(s,p){return s+p.inv;},0);
+  var gl=portVal-invested;
+  document.getElementById('pst').innerHTML='<div class="sc"><div class="sl">Cash Available</div><div class="sv">&#8377;'+fmt(port.cash)+'</div></div><div class="sc"><div class="sl">Portfolio Value</div><div class="sv">&#8377;'+fmt(portVal)+'</div></div><div class="sc"><div class="sl">Total Invested</div><div class="sv">&#8377;'+fmt(invested)+'</div></div><div class="sc"><div class="sl">Total Gain/Loss</div><div class="sv" style="color:'+(gl>=0?'#16a34a':'#dc2626')+'">'+(gl>=0?'+':'-')+'&#8377;'+fmt(Math.abs(gl))+'</div></div>';
+  if(!port.pos.length){document.getElementById('ptbl').innerHTML='<div style="text-align:center;font-size:12px;color:#9ca3af;padding:36px 0">No positions yet. Add your first stock above!</div>';}
+  else{document.getElementById('ptbl').innerHTML=port.pos.map(function(p){var st=liveStocks[p.sym];var cur=st?st.p*p.sh:p.bp*p.sh;var g=cur-p.inv;return '<div class="prow"><span style="font-weight:700;font-size:12px;color:#111">'+p.sym.replace('.NS','')+'</span><span style="font-size:11px;color:#9ca3af">'+(NMETA[p.sym]?NMETA[p.sym].n:p.sym)+'</span><span style="font-size:12px;text-align:right;color:#374151">&#8377;'+fmt(p.inv)+'</span><span style="font-size:12px;text-align:right;color:#374151">&#8377;'+fmt(cur)+'</span><div style="text-align:right"><div style="font-size:11px;color:#6b7280">'+p.sh+' shares</div><div style="font-size:11px;font-weight:700;color:'+(g>=0?'#16a34a':'#dc2626')+'">'+(g>=0?'+':'-')+'&#8377;'+fmt(Math.abs(g))+'</div><button onclick="sellAll(\''+p.sym+'\')" style="font-size:10px;color:#dc2626;background:none;border:none;cursor:pointer;padding:0">Sell All</button></div></div>';}).join('');}
+  var colors=['#2d6a5e','#4aa090','#7bc4b8','#a8d8d0','#1a3a35','#3d8a7a'];
+  var pd=port.pos.map(function(p,i){return {t:p.sym.replace('.NS',''),v:liveStocks[p.sym]?liveStocks[p.sym].p*p.sh:p.bp*p.sh,c:colors[i%colors.length]};}).filter(function(d){return d.v>0;});
+  document.getElementById('palloc').innerHTML=pd.length?pd.map(function(d){return '<div style="display:flex;align-items:center;gap:7px;font-size:11px;margin-bottom:5px"><div style="width:9px;height:9px;border-radius:2px;background:'+d.c+'"></div><span style="font-weight:600;color:#374151">'+d.t+'</span><span style="color:#9ca3af">&#8377;'+fmt(d.v)+'</span></div>';}).join(''):'<div style="font-size:12px;color:#9ca3af;text-align:center;padding:28px 0">Add positions to see allocation</div>';
+  if(pChart)pChart.destroy();
+  pChart=new Chart(document.getElementById('pc'),{type:'line',data:{labels:port.hist.map(function(h){return h.l;}),datasets:[{data:port.hist.map(function(h){return h.v;}),borderColor:'#2d6a5e',borderWidth:2,fill:true,backgroundColor:'rgba(45,106,94,.15)',pointRadius:0,tension:.4}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{callback:function(v){return 'Rs'+(v/1000).toFixed(0)+'k';},font:{size:10}},grid:{color:'#f0f0f0'}}}}});
+}
+function ap(){
+  var t=document.getElementById('pt').value.trim().toUpperCase()+'.NS';
+  var sh=parseInt(document.getElementById('ps').value);
+  var err=document.getElementById('pe');
+  if(!NMETA[t]){err.textContent='Not found. Try: RELIANCE, TCS, INFY...';return;}
+  if(!sh||sh<=0){err.textContent='Enter valid shares.';return;}
+  var s=liveStocks[t];var price=s?s.p:1000;var cost=price*sh;
+  if(cost>port.cash){err.textContent='Not enough cash. Need Rs'+fmt(cost);return;}
+  err.textContent='';port.cash-=cost;
+  var ex=port.pos.find(function(p){return p.sym===t;});
+  if(ex){ex.sh+=sh;ex.inv+=cost;}else{port.pos.push({sym:t,sh:sh,inv:cost,bp:price});}
+  document.getElementById('pt').value='';
+  var total=port.cash+port.pos.reduce(function(s,p){var st=liveStocks[p.sym];return s+(st?st.p*p.sh:p.bp*p.sh);},0);
+  port.hist.push({l:'T'+port.hist.length,v:Math.round(total)});
+  renderPortfolio();
+}
+function sellAll(sym){
+  var p=port.pos.find(function(x){return x.sym===sym;});if(!p)return;
+  var s=liveStocks[sym];port.cash+=s?s.p*p.sh:p.bp*p.sh;
+  port.pos=port.pos.filter(function(x){return x.sym!==sym;});
+  var total=port.cash+port.pos.reduce(function(s,p){var st=liveStocks[p.sym];return s+(st?st.p*p.sh:p.bp*p.sh);},0);
+  port.hist.push({l:'T'+port.hist.length,v:Math.round(total)});
+  renderPortfolio();
+}
+
+// GLOSSARY
+function renderGlossary(){
+  var q=(document.getElementById('gq').value||'').toLowerCase();
+  var f=GLOSSARY.filter(function(g){return g.t.toLowerCase().indexOf(q)>-1||g.d.toLowerCase().indexOf(q)>-1;});
+  document.getElementById('gg').innerHTML=f.map(function(g){return '<div class="gc"><div class="gt">'+g.t+'</div><div class="gd">'+g.d+'</div></div>';}).join('')||'<div style="grid-column:1/-1;text-align:center;font-size:12px;color:#9ca3af;padding:40px 0">No terms found.</div>';
+}
+function fg(){renderGlossary();}
+
+// NEWS
+function renderNews(){
+  var sentMap={pos:'tp',neg:'tn',neu:'tne',mix:'tm'};
+  var dotMap={pos:'#16a34a',neg:'#dc2626',neu:'#3b82f6',mix:'#f59e0b'};
+  document.getElementById('nws').innerHTML=NEWS.map(function(n){return '<div class="ni"><div class="ndot" style="background:'+(dotMap[n.sent]||'#9ca3af')+'"></div><div><div class="ntit">'+n.title+'</div><div class="nsrc">'+n.src+' &middot; '+n.time+'</div><div class="nsum">'+n.sum+'</div><div class="nsum" style="color:#2d6a5e;font-weight:600">Why it matters: '+n.why+'</div><span class="tag '+(sentMap[n.sent]||'tne')+'">'+(n.sent==='pos'?'Positive':n.sent==='neg'?'Negative':n.sent==='mix'?'Mixed':'Neutral')+'</span></div></div>';}).join('');
+}
+
+// AI CHAT
+function initChat(){
+  if(chatHist.length===0){
+    chatHist.push({role:'assistant',content:'Hi! I\'m StockSense AI, powered by Groq. Ask me anything about investing in India \u2014 stocks, mutual funds, Nifty 50, or how to get started. I\'m here to help beginners feel confident!'});
+    renderChat();
+  }
+}
+function renderChat(){
+  document.getElementById('cm').innerHTML=chatHist.map(function(m){
+    if(m.role==='assistant')return '<div class="mrow"><div class="av">AI</div><div class="bai">'+m.content+'</div></div>';
+    return '<div class="mrow u"><div class="bu">'+m.content+'</div></div>';
+  }).join('');
+  var cm=document.getElementById('cm');cm.scrollTop=cm.scrollHeight;
+}
+async function sc(preset){
+  var inp=document.getElementById('ci');
+  var msg=preset||inp.value.trim();
+  if(!msg)return;
+  inp.value='';
+  chatHist.push({role:'user',content:msg});
+  renderChat();
+  document.getElementById('csend').disabled=true;
+  document.getElementById('csend').textContent='...';
+  try{
+    var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ},
+      body:JSON.stringify({
+        model:'llama-3.1-8b-instant',
+        messages:[
+          {role:'system',content:'You are StockSense AI, a friendly investing assistant for Indian beginners. Keep answers simple, clear, and encouraging. Focus on Indian markets (NSE, BSE, Nifty 50, Sensex). Never give specific buy/sell advice. Always remind users to do their own research. Use simple language a 15-year-old can understand.'},
+          ...chatHist
+        ],
+        max_tokens:400,temperature:0.7
+      })
+    });
+    var data=await res.json();
+    var reply=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||'Sorry, I could not get a response. Please try again.';
+    chatHist.push({role:'assistant',content:reply});
+  }catch(e){
+    chatHist.push({role:'assistant',content:'Sorry, there was an error connecting to the AI. Please check your internet connection and try again.'});
+  }
+  renderChat();
+  document.getElementById('csend').disabled=false;
+  document.getElementById('csend').textContent='Send \u2192';
+}
+
+// INIT
+window.onload=function(){
+  go('home');
+  renderGlossary();
+  renderPortfolio();
+  fetchLive();
+  setInterval(fetchLive,60000);
+};
+</script>
+</body>
+</html>
