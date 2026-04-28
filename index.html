@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -1340,63 +1340,6 @@ async function drawStockChart(sym, d, meta, isDark){
     }
   });
 }
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-      <div>
-        <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:2px">${meta.s} · NSE</div>
-        <div style="font-size:20px;font-weight:800;color:var(--text)">${meta.n}</div>
-        <div style="font-size:13px;color:var(--text3)">${sym}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:28px;font-weight:900;color:var(--text)">${fmt(d.p||0)}</div>
-        <div style="font-size:13px;font-weight:700;color:${clr(d.pct||0)}">${d.c>=0?'+':''}${(d.c||0).toFixed(2)} (${fmtPct(d.pct||0)})</div>
-        <div style="font-size:11px;margin-top:4px;font-weight:700;color:${sigClr};background:${sigClr}18;padding:2px 8px;border-radius:20px;display:inline-block">${signal}</div>
-      </div>
-    </div>
-    <div class="range-btns">
-      ${['1W','1M','3M','1Y'].map(r=>`<button class="rb ${r===curRange?'on':''}" onclick="curRange='${r}';renderStockDetail('${sym}')">${r}</button>`).join('')}
-    </div>
-    <div class="card" style="padding:14px;margin-bottom:14px">
-      <canvas id="sc-chart" height="130"></canvas>
-    </div>
-    <div class="krow">
-      <div class="ki"><div class="kl">Market Cap</div><div class="kv">${d.mc||'—'}</div></div>
-      <div class="ki"><div class="kl">P/E Ratio</div><div class="kv">${d.pe||'—'}</div></div>
-      <div class="ki"><div class="kl">EPS</div><div class="kv">₹${d.eps||'—'}</div></div>
-      <div class="ki"><div class="kl">Dividend</div><div class="kv">${d.div||'—'}</div></div>
-      <div class="ki"><div class="kl">Beta</div><div class="kv">${d.beta||'—'}</div></div>
-      <div class="ki"><div class="kl">Volume</div><div class="kv">${d.vol||'—'}</div></div>
-      <div class="ki"><div class="kl">52W High</div><div class="kv">${d.h52?fmt(d.h52):'—'}</div></div>
-      <div class="ki"><div class="kl">52W Low</div><div class="kv">${d.l52?fmt(d.l52):'—'}</div></div>
-    </div>
-    <div class="card" style="padding:14px;margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px">
-        <span>52W Low: ${d.l52?fmt(d.l52):'—'}</span>
-        <span style="font-weight:700;color:var(--text)">Current: ${fmt(d.p||0)}</span>
-        <span>52W High: ${d.h52?fmt(d.h52):'—'}</span>
-      </div>
-      <div class="rbar"><div class="rfill" style="width:${rangePos}%;background:${rangePos>60?'#16a34a':rangePos>30?'#f59e0b':'#dc2626'}"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
-        <span>Bearish Zone</span><span>Neutral</span><span>Bullish Zone</span>
-      </div>
-    </div>
-    <div class="card" style="padding:14px;margin-bottom:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="font-size:11px;font-weight:700;color:var(--text)">Risk Level: <span style="color:${riskClr}">${d.risk||'Medium'}</span></div>
-        <button class="btn-outline" style="font-size:10px;padding:4px 10px" onclick="document.getElementById('exbox-${sym}').classList.toggle('show')">Learn More</button>
-      </div>
-      <div class="exbox" id="exbox-${sym}">
-        <strong>${meta.n}</strong> is a ${meta.s} sector company listed on NSE. 
-        With a beta of ${d.beta||'1.0'}, it is ${parseFloat(d.beta||1)>1?'more volatile than':'less volatile than'} the broader market.
-        The P/E ratio of ${d.pe||'N/A'} ${parseFloat(d.pe||0)>30?'suggests premium valuation':'suggests reasonable valuation'}.
-        Dividend yield of ${d.div||'0%'} ${parseFloat(d.div||0)>2?'makes it attractive for income investors':'is modest'}.
-        <br><br><em>Note: All data is simulated for educational purposes.</em>
-      </div>
-    </div>
-    <div class="disclaimer">
-      <strong>⚠ Disclaimer:</strong> All prices, charts, and signals on StockSense are <strong>simulated</strong> for educational purposes only. 
-      This is NOT financial advice. Do not make real investment decisions based on this data.
-    </div>
-  `;
 // ===== PORTFOLIO =====
 function renderPort(){
   const positions=port.pos;
