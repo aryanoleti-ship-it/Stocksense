@@ -1107,6 +1107,7 @@ function fas(){
 
 // ===== STOCK DETAIL =====
 function openDetail(sym){
+  if(!isLoggedIn()){openAuth('signin');return;}
   curTicker=sym;
   go('detail');
 }
