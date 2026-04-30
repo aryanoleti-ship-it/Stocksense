@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -332,6 +332,7 @@ h1{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px}
     <button onclick="go('home')" id="n-home" class="active">Home</button>
     <button onclick="navGuard('market')" id="n-market">Market</button>
     <button onclick="navGuard('all')" id="n-all">Stocks</button>
+    <button onclick="navGuard('recent')" id="n-recent">Recently Viewed</button>
     <button onclick="navGuard('port')" id="n-port">Portfolio</button>
     <button onclick="navGuard('gloss')" id="n-gloss">Glossary</button>
     <button onclick="navGuard('news')" id="n-news">News</button>
@@ -348,14 +349,15 @@ h1{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px}
 
 <!-- HOME -->
 <div id="p-home" class="page">
-  <div class="hero">
-    <div style="position:relative;z-index:1;padding:40px 48px 36px">
-      <div id="hero-greeting" style="color:rgba(255,255,255,.9);font-size:clamp(1.6rem,3.5vw,2.6rem);font-weight:900;line-height:1.2;margin-bottom:8px"></div>
-      <div style="color:rgba(255,255,255,.6);font-size:15px;margin-bottom:24px">Here's what the market looks like today.</div>
-      <div class="search-box" style="max-width:420px">
+  <div class="hero" style="min-height:320px;display:flex;align-items:center">
+    <div style="position:relative;z-index:1;padding:52px 48px;width:100%">
+      <div class="hero-tag">✦ Smart stock discovery for Indian investors</div>
+      <div id="hero-greeting" style="color:#fff;font-size:clamp(2.2rem,4.5vw,3.4rem);font-weight:900;line-height:1.1;margin-bottom:12px"></div>
+      <p style="color:rgba(255,255,255,.65);font-size:16px;max-width:520px;line-height:1.8;margin-bottom:28px">Track live Nifty 50 prices, analyse trends, simulate your portfolio and get AI insights — all in one place.</p>
+      <div class="search-box" style="max-width:440px;margin-bottom:20px">
         <div class="search-box-inner">
           <div class="search-label">Stock Symbol or Company</div>
-          <input id="hs" placeholder="INFY" onkeydown="if(event.key==='Enter')doSearch()" onclick="heroInputClick()"/>
+          <input id="hs" placeholder="INFY, RELIANCE, TCS..." onkeydown="if(event.key==='Enter')doSearch()" onclick="heroInputClick()"/>
         </div>
         <button class="search-btn" onclick="doSearch()">→</button>
       </div>
@@ -365,7 +367,6 @@ h1{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px}
   <div class="idx-grid" id="hidx"></div>
   <div id="auth-banner-wrap"></div>
   <div class="wrap">
-    <div id="recently-viewed-wrap"></div>
     <div class="g2" style="margin-top:18px">
       <div class="card" style="padding:0;overflow:hidden">
         <div style="padding:14px 16px 8px" class="card-title">Top Gainers Today</div>
@@ -375,6 +376,19 @@ h1{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px}
         <div style="padding:14px 16px 8px" class="card-title">Top Losers Today</div>
         <div id="hl"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECENTLY VIEWED PAGE -->
+<div id="p-recent" class="page">
+  <div class="wrap">
+    <h1>Recently Viewed</h1>
+    <p class="sub">Stocks you've looked at recently</p>
+    <div id="recent-grid" class="stock-grid"></div>
+    <div id="recent-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text3);font-size:13px">
+      You haven't viewed any stocks yet.<br>
+      <button class="btn" style="margin-top:16px" onclick="go('all')">Browse Stocks →</button>
     </div>
   </div>
 </div>
@@ -668,24 +682,37 @@ const GLOSSARY=[
 ];
 
 const NEWS=[
-{t:'RBI holds repo rate at 6.5% — markets cheer stability',src:'Economic Times',sum:'The Reserve Bank of India kept the benchmark repo rate unchanged, signaling a pause in the rate hike cycle. Markets rallied on the news.',why:'Lower rates = cheaper loans = more business growth = higher stock prices.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
-{t:'Infosys raises FY25 revenue guidance to 4.5–5%',src:'Mint',sum:'India\'s second-largest IT company raised its annual revenue growth forecast, citing strong deal wins in North America and Europe.',why:'Higher guidance = more confidence in future earnings = stock price boost.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
-{t:'Adani Group stocks fall 3–5% on short-seller report',src:'Business Standard',sum:'A new report by a US-based short-seller raised concerns about Adani Group\'s debt levels and corporate governance.',why:'Negative reports can trigger panic selling, especially in high-beta stocks.',sent:'negative',dot:'#dc2626',tag:'tn',tl:'Negative'},
-{t:'Tata Motors JLR sales hit record high in Q3',src:'NDTV Profit',sum:'Jaguar Land Rover reported record quarterly sales, driven by strong demand for Range Rover and Defender models globally.',why:'Strong sales = higher revenue = better earnings = positive for stock price.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
-{t:'SEBI proposes new rules for F&O trading',src:'Financial Express',sum:'SEBI is considering stricter eligibility criteria for retail investors in futures and options trading to reduce speculation.',why:'Tighter F&O rules may reduce volumes but improve market stability long-term.',sent:'neutral',dot:'#3b82f6',tag:'tne',tl:'Neutral'},
-{t:'Reliance Jio to launch 5G in 100 more cities',src:'Hindustan Times',sum:'Reliance Jio announced expansion of its 5G network to 100 additional cities, targeting 500 million users by 2025.',why:'5G expansion = more subscribers = higher ARPU = revenue growth for Reliance.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
-{t:'IT sector faces headwinds from US slowdown fears',src:'Reuters India',sum:'Indian IT companies may see slower deal closures as US clients cut discretionary tech spending amid recession fears.',why:'US is the biggest market for Indian IT — slowdown there directly impacts revenues.',sent:'negative',dot:'#dc2626',tag:'tn',tl:'Negative'},
-{t:'SBI reports 18% YoY profit growth in Q2',src:'Moneycontrol',sum:'State Bank of India posted strong quarterly results with net profit rising 18% year-on-year, driven by higher net interest income.',why:'Strong bank profits signal healthy credit growth and economic activity.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
-{t:'Crude oil prices rise 4% — BPCL, ONGC in focus',src:'Bloomberg Quint',sum:'Brent crude surged 4% on supply cut announcements by OPEC+, putting energy stocks in the spotlight.',why:'Higher crude = better margins for upstream companies like ONGC, but pressure on OMCs.',sent:'mixed',dot:'#f59e0b',tag:'tm',tl:'Mixed'},
-{t:'Nifty 50 hits all-time high of 22,500',src:'Zee Business',sum:'The Nifty 50 index crossed 22,500 for the first time, driven by FII inflows and strong domestic consumption data.',why:'All-time highs signal strong market sentiment and investor confidence.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'}
+{t:'RBI holds repo rate at 6.5% — markets cheer stability',src:'Economic Times',date:'28 Apr 2026, 10:32 AM',sum:'The Reserve Bank of India kept the benchmark repo rate unchanged, signaling a pause in the rate hike cycle. Markets rallied on the news.',why:'Lower rates = cheaper loans = more business growth = higher stock prices.',more:'The RBI\'s Monetary Policy Committee voted 5-1 to hold rates, citing easing inflation and stable growth. The governor noted that food inflation remains a concern but core inflation has moderated. Bond yields fell 8 basis points following the announcement, and banking stocks led the market rally.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
+{t:'Infosys raises FY25 revenue guidance to 4.5–5%',src:'Mint',date:'27 Apr 2026, 2:15 PM',sum:'India\'s second-largest IT company raised its annual revenue growth forecast, citing strong deal wins in North America and Europe.',why:'Higher guidance = more confidence in future earnings = stock price boost.',more:'Infosys reported a total contract value of $4.1 billion in new deals this quarter, up 22% YoY. The company cited strong demand in financial services and manufacturing verticals. CEO Salil Parekh said AI-led transformation deals are accelerating, with over 300 AI projects currently in delivery.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
+{t:'Adani Group stocks fall 3–5% on short-seller report',src:'Business Standard',date:'26 Apr 2026, 9:45 AM',sum:'A new report by a US-based short-seller raised concerns about Adani Group\'s debt levels and corporate governance.',why:'Negative reports can trigger panic selling, especially in high-beta stocks.',more:'The report alleged that several Adani Group entities have undisclosed related-party transactions and questioned the valuation of key infrastructure assets. Adani Group issued a rebuttal calling the report "misleading and baseless." SEBI has been asked by investors to investigate the claims.',sent:'negative',dot:'#dc2626',tag:'tn',tl:'Negative'},
+{t:'Tata Motors JLR sales hit record high in Q3',src:'NDTV Profit',date:'25 Apr 2026, 4:00 PM',sum:'Jaguar Land Rover reported record quarterly sales, driven by strong demand for Range Rover and Defender models globally.',why:'Strong sales = higher revenue = better earnings = positive for stock price.',more:'JLR sold 1,31,000 vehicles in Q3, up 27% YoY. The Range Rover and Defender models accounted for 60% of revenue. JLR also announced it will launch 4 new electric models by 2027, with pre-orders already exceeding 50,000 units globally.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
+{t:'SEBI proposes new rules for F&O trading',src:'Financial Express',date:'24 Apr 2026, 11:20 AM',sum:'SEBI is considering stricter eligibility criteria for retail investors in futures and options trading to reduce speculation.',why:'Tighter F&O rules may reduce volumes but improve market stability long-term.',more:'SEBI\'s consultation paper proposes a minimum net worth of ₹10 lakh for retail F&O participation, mandatory certification, and position limits. The regulator noted that 93% of individual F&O traders lost money in FY24. The proposal is open for public comment until May 15.',sent:'neutral',dot:'#3b82f6',tag:'tne',tl:'Neutral'},
+{t:'Reliance Jio to launch 5G in 100 more cities',src:'Hindustan Times',date:'23 Apr 2026, 3:30 PM',sum:'Reliance Jio announced expansion of its 5G network to 100 additional cities, targeting 500 million users by 2025.',why:'5G expansion = more subscribers = higher ARPU = revenue growth for Reliance.',more:'Jio\'s 5G rollout now covers 450 cities with over 120 million 5G users. The company plans to invest ₹25,000 crore in network infrastructure this fiscal year. Analysts expect Jio\'s ARPU to rise from ₹181 to ₹210 by FY26 as 5G adoption grows.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
+{t:'IT sector faces headwinds from US slowdown fears',src:'Reuters India',date:'22 Apr 2026, 8:55 AM',sum:'Indian IT companies may see slower deal closures as US clients cut discretionary tech spending amid recession fears.',why:'US is the biggest market for Indian IT — slowdown there directly impacts revenues.',more:'US GDP growth slowed to 1.2% in Q1 2026, below expectations. Several Fortune 500 companies have announced IT budget freezes. TCS, Wipro, and HCL Tech have all guided for cautious near-term outlook. However, AI-related spending remains resilient and could offset some of the weakness.',sent:'negative',dot:'#dc2626',tag:'tn',tl:'Negative'},
+{t:'SBI reports 18% YoY profit growth in Q2',src:'Moneycontrol',date:'21 Apr 2026, 5:10 PM',sum:'State Bank of India posted strong quarterly results with net profit rising 18% year-on-year, driven by higher net interest income.',why:'Strong bank profits signal healthy credit growth and economic activity.',more:'SBI\'s net profit stood at ₹18,331 crore, beating analyst estimates of ₹17,200 crore. Net Interest Margin improved to 3.22%. Gross NPA ratio fell to 2.24%, the lowest in a decade. The bank also announced a dividend of ₹13.70 per share.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'},
+{t:'Crude oil prices rise 4% — BPCL, ONGC in focus',src:'Bloomberg Quint',date:'20 Apr 2026, 12:00 PM',sum:'Brent crude surged 4% on supply cut announcements by OPEC+, putting energy stocks in the spotlight.',why:'Higher crude = better margins for upstream companies like ONGC, but pressure on OMCs.',more:'OPEC+ announced an additional 500,000 barrels per day production cut starting May 2026. Brent crude crossed $92/barrel. ONGC and Oil India are expected to benefit from higher realisations, while BPCL and HPCL may face margin pressure if the government doesn\'t revise fuel prices.',sent:'mixed',dot:'#f59e0b',tag:'tm',tl:'Mixed'},
+{t:'Nifty 50 hits all-time high of 24,500',src:'Zee Business',date:'19 Apr 2026, 3:45 PM',sum:'The Nifty 50 index crossed 24,500 for the first time, driven by FII inflows and strong domestic consumption data.',why:'All-time highs signal strong market sentiment and investor confidence.',more:'Foreign Institutional Investors pumped ₹12,400 crore into Indian equities in April, the highest monthly inflow in 18 months. Domestic consumption data showed retail sales up 8.4% YoY. Analysts at Goldman Sachs raised their Nifty target to 26,000 for December 2026.',sent:'positive',dot:'#16a34a',tag:'tp',tl:'Positive'}
 ];
 
 // ===== STATE =====
 let liveStocks={};
 let curTicker='RELIANCE.NS';
 let curRange='1W';
-let port={cash:500000,pos:[],hist:[{l:'Start',v:500000}]};
+const DEFAULT_PORT={cash:500000,pos:[],hist:[{l:'Start',v:500000}]};
+let port=JSON.parse(JSON.stringify(DEFAULT_PORT)); // start empty, loaded in startApp
 let chatHist=[];
+function getPortKey(){const u=getCurrentUser();return 'ss-portfolio-'+(u?.email||'guest');}
+function getChatKey(){const u=getCurrentUser();return 'ss-chathist-'+(u?.email||'guest');}
+function savePort(){
+  try{localStorage.setItem(getPortKey(),JSON.stringify(port));}catch(e){}
+}
+function saveChatHist(){
+  try{localStorage.setItem(getChatKey(),JSON.stringify(chatHist.slice(-50)));}catch(e){}
+}
+function loadUserData(){
+  try{port=JSON.parse(localStorage.getItem(getPortKey())||JSON.stringify(DEFAULT_PORT));}catch(e){port=JSON.parse(JSON.stringify(DEFAULT_PORT));}
+  try{chatHist=JSON.parse(localStorage.getItem(getChatKey())||'[]');}catch(e){chatHist=[];}
+}
 let sChart=null,pChart=null,nChart=null,secChart=null;
 let lastFetch=0;
 
@@ -829,6 +856,7 @@ function go(page){
   else if(page==='gloss'){fg();}
   else if(page==='news'){renderNews();}
   else if(page==='ai'){initChat();}
+  else if(page==='recent'){renderRecentPage();}
   else if(page==='buy'){}
   else if(page==='detail'){renderDetail();}
 }
@@ -1034,7 +1062,6 @@ function renderRecentlyViewed(){
   `;
 }
 function renderHome(){
-  // Greeting
   const greetEl=document.getElementById('hero-greeting');
   if(greetEl){
     const user=getCurrentUser();
@@ -1044,8 +1071,35 @@ function renderHome(){
   renderIndexCards('hidx');
   renderGainersLosers('hg','hl',5);
   renderChips();
-  renderRecentlyViewed();
   updateAuthBanner();
+}
+function renderRecentPage(){
+  const recent=getRecentlyViewed();
+  const grid=document.getElementById('recent-grid');
+  const empty=document.getElementById('recent-empty');
+  if(!grid)return;
+  if(!recent.length){
+    grid.innerHTML='';
+    if(empty)empty.style.display='block';
+    return;
+  }
+  if(empty)empty.style.display='none';
+  grid.innerHTML=recent.map(sym=>{
+    const pct=getPct(sym);
+    const pr=getPrice(sym);
+    const tint=pct<0?'background:rgba(220,38,38,0.07);border-color:rgba(220,38,38,0.25);':'';
+    return `<div class="stock-card" onclick="openDetail('${sym}')" style="${tint}">
+      <div class="sc-left">
+        <div class="tk">${sym.replace('.NS','')}</div>
+        <div class="nm">${NMETA[sym]?.n||''}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">${NMETA[sym]?.s||''}</div>
+      </div>
+      <div class="sc-right">
+        <div class="pr">${fmt(pr)}</div>
+        <div class="pc ${pct>=0?'up':'dn'}">${fmtPct(pct)}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 function renderIndexCards(id){
   const el=document.getElementById(id);
@@ -1490,6 +1544,7 @@ function ap(){
   const totalVal=port.cash+port.pos.reduce((a,p)=>a+getPrice(p.sym)*p.shares,0);
   port.hist.push({l:sym.replace('.NS',''),v:+totalVal.toFixed(0)});
   document.getElementById('pt').value='';
+  savePort();
   renderPort();
 }
 function removePos(i){
@@ -1498,6 +1553,7 @@ function removePos(i){
   port.pos.splice(i,1);
   const totalVal=port.cash+port.pos.reduce((a,p)=>a+getPrice(p.sym)*p.shares,0);
   port.hist.push({l:'Sell',v:+totalVal.toFixed(0)});
+  savePort();
   renderPort();
 }
 
@@ -1515,24 +1571,48 @@ function fg(){
 
 // ===== NEWS =====
 function renderNews(){
-  document.getElementById('nws').innerHTML=NEWS.map(n=>`
-    <div class="ni">
-      <div class="ndot" style="background:${n.dot}"></div>
-      <div style="flex:1">
-        <div class="ntit">${n.t}</div>
-        <div class="nsrc">${n.src}</div>
-        <div class="nsum">${n.sum}</div>
-        <div class="nwhy">💡 Why it matters: ${n.why}</div>
-        <span class="tag ${n.tag}">${n.tl}</span>
+  document.getElementById('nws').innerHTML=NEWS.map((n,i)=>`
+    <div class="ni" style="flex-direction:column;cursor:pointer" onclick="toggleNews(${i})">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div class="ndot" style="background:${n.dot};margin-top:5px;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <div class="ntit" style="flex:1">${n.t}</div>
+            <span id="news-arrow-${i}" style="font-size:12px;color:var(--text3);flex-shrink:0;transition:transform .2s">▼</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:3px;flex-wrap:wrap">
+            <span class="nsrc" style="margin:0">${n.src}</span>
+            <span style="font-size:10px;color:var(--text3)">🕐 ${n.date}</span>
+            <span class="tag ${n.tag}">${n.tl}</span>
+          </div>
+          <div class="nsum" style="margin-top:6px">${n.sum}</div>
+        </div>
+      </div>
+      <div id="news-expand-${i}" style="display:none;margin-top:12px;margin-left:20px;padding:14px;background:var(--row-hover);border-radius:10px;border:1px solid var(--border)">
+        <div class="nwhy" style="margin-bottom:8px">💡 <strong>Why it matters:</strong> ${n.why}</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">${n.more}</div>
       </div>
     </div>
   `).join('');
+}
+function toggleNews(i){
+  const el=document.getElementById('news-expand-'+i);
+  const arrow=document.getElementById('news-arrow-'+i);
+  if(!el)return;
+  const open=el.style.display==='block';
+  el.style.display=open?'none':'block';
+  if(arrow)arrow.style.transform=open?'':'rotate(180deg)';
 }
 
 // ===== AI CHAT =====
 function initChat(){
   const cm=document.getElementById('cm');
-  if(cm&&!cm.children.length){
+  if(!cm)return;
+  if(cm.children.length) return; // already rendered
+  // Restore saved chat history
+  if(chatHist.length){
+    chatHist.forEach(m=>addMsg(m.role==='user'?'user':'ai',m.content));
+  } else {
     addMsg('ai','👋 Hi! I\'m StockSense AI, powered by Groq. Ask me anything about investing in India — stocks, mutual funds, SIP, brokers, or market concepts!');
   }
 }
@@ -1556,6 +1636,7 @@ async function sc(preset){
   if(inp)inp.value='';
   addMsg('user',msg);
   chatHist.push({role:'user',content:msg});
+  saveChatHist();
   const btn=document.getElementById('csend');
   if(btn){btn.disabled=true;btn.textContent='...';}
   try{
@@ -1577,6 +1658,7 @@ async function sc(preset){
     } else {
       const reply=j.choices?.[0]?.message?.content||'Sorry, I could not get a response. Please try again.';
       chatHist.push({role:'assistant',content:reply});
+      saveChatHist();
       addMsg('ai',reply);
     }
   }catch(e){
@@ -1605,6 +1687,8 @@ function landingSignUp(){
 
 async function startApp(){
   hideLanding();
+  // Load user-specific portfolio and chat data
+  loadUserData();
   document.getElementById('p-home').style.display='block';
   document.getElementById('n-home').classList.add('active');
   updateNavUser();
@@ -1642,6 +1726,397 @@ window.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
